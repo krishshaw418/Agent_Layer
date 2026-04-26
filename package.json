@@ -1,0 +1,7 @@
+{
+    "name": "digentic",
+    "private": "true",
+    "workspaces": [
+        "packages/**"
+    ]
+}

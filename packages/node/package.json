@@ -1,0 +1,27 @@
+{
+  "name": "node",
+  "version": "1.0.0",
+  "description": "Pre-flight estimation CLI for Ollama model requests",
+  "type": "module",
+  "bin": {
+    "preflight": "./dist/bin/preflight.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/bin/preflight.js",
+    "preflight": "npm run build && node dist/bin/preflight.js --"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.3",
+    "commander": "^12.0.0",
+    "inquirer": "^9.2.15",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^25.6.0",
+    "typescript": "^5.9.3"
+  }
+}
