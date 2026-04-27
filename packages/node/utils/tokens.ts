@@ -30,8 +30,8 @@ const TASK_RULES: TaskRule[] = [
     type: "code_generation",
     label: "Code Generation",
     keywords: ["write", "code", "function", "implement", "script", "class", "program"],
-    outputMultiplier: 8.0,
-    baseTokens: 700,
+    outputMultiplier: 3.5,
+    baseTokens: 400,
   },
   {
     type: "summarization",
@@ -138,12 +138,33 @@ export function analyzeContextFit(
 export function parseContextWindow(modelInfo: OllamaShowResponse | null): number | null {
   if (!modelInfo) return null;
 
+  // Read directly from model_info using architecture family as key prefix
+  const info = modelInfo.model_info;
+  if (info) {
+    const arch = modelInfo.details?.family ?? "general";
+    const contextKey = `${arch}.context_length`;
+    const fromInfo = info[contextKey];
+    if (typeof fromInfo === "number" && fromInfo > 0) return fromInfo;
+
+    // Fallback: scan all keys for any *.context_length field
+    const contextEntry = Object.entries(info).find(
+      ([k, v]) => k.endsWith(".context_length") && typeof v === "number"
+    );
+    if (contextEntry) return contextEntry[1] as number;
+  }
+
+  // Check parameters string for a user-set num_ctx override
   const params = modelInfo.parameters ?? "";
   const match = params.match(/num_ctx\s+(\d+)/);
   if (match?.[1]) return parseInt(match[1], 10);
 
-  const modelfile = (modelInfo.modelfile ?? "").toLowerCase();
-  if (modelfile.includes("mistral") || modelfile.includes("llama")) return 8192;
+  // Family heuristic — known typical defaults
+  const family = (modelInfo.details?.family ?? "").toLowerCase();
+  if (family.includes("llama"))   return 8192;
+  if (family.includes("mistral")) return 8192;
+  if (family.includes("gemma"))   return 8192;
+  if (family.includes("qwen"))    return 32768;
+  if (family.includes("phi"))     return 4096;
 
-  return 4096;
+  return 4096; // conservative fallback
 }

@@ -4,12 +4,33 @@ import { formatDuration } from "../probes/warmup.js";
 import type {
   AccuracyEstimate,
   Bid,
+  BidDiagnostics,
   ContextFitResult,
   ReportInput,
   TimeEstimate,
   TokenEstimate,
   WarmupProbeResult,
 } from "../types.js";
+
+// Confidence conversion
+function computeConfidence(
+  accuracyEst: AccuracyEstimate,
+  timeEst: TimeEstimate,
+  contextFit: ContextFitResult
+): number {
+  let confidence = (accuracyEst.score ?? 6) / 10;
+
+  // Penalise for context issues
+  if (contextFit.grade === "overflow") confidence -= 0.3;
+  else if (contextFit.grade === "tight") confidence -= 0.1;
+
+  // Penalise for low time estimate confidence
+  if (timeEst.confidence === "low") confidence -= 0.1;
+  else if (timeEst.confidence === "medium") confidence -= 0.05;
+
+  // Clamp to [0.0, 1.0]
+  return Math.round(Math.max(0, Math.min(1, confidence)) * 100) / 100;
+}
 
 // Verdict logic
 // Produces a top-level "accept" | "caution" | "reject" based on all signals.
@@ -18,7 +39,7 @@ function computeVerdict(
   timeEst: TimeEstimate,
   tokenEst: TokenEstimate,
   contextFit: ContextFitResult
-): { verdict: Bid["verdict"]; reasons: string[] } {
+): { verdict: BidDiagnostics["verdict"]; reasons: string[] } {
   const reasons: string[] = [];
   let rejectCount = 0;
   let cautionCount = 0;
@@ -62,55 +83,61 @@ function computeVerdict(
   return { verdict: "accept", reasons };
 }
 
-// To build bid
-export function buildBid(input: ReportInput, prompt: string): Bid {
-  const { modelName, modelInfo, probe, taskType, contextFit, timeEst, tokenEst, accuracyEst } = input;
+// To build on-chain bid
+export function buildBid(input: ReportInput, jobId: string): Bid {
+  const { modelName, timeEst, tokenEst, accuracyEst, contextFit } = input;
 
-  const { verdict, reasons } = computeVerdict(accuracyEst, timeEst, tokenEst, contextFit);
-
-  const hardware = resolveHardware(probe);
-  const contextWindow = contextFit.contextWindow ?? null;
+  const confidence = computeConfidence(accuracyEst, timeEst, contextFit);
 
   return {
-    schema_version: "1.0",
-    bid_at: new Date().toISOString(),
+    job_id:        jobId,
+    placed_at:     Math.floor(Date.now() / 1000),   // unix seconds
+    token:         tokenEst.total,
+    time_requires: timeEst.estimatedMs ?? 0,
+    confidence,
+    model:         modelName,
+  };
+}
 
-    task: {
-      prompt_excerpt: prompt.slice(0, 120).replace(/\n/g, " "),
-      task_type:      taskType.type,
-      task_label:     taskType.label,
-    },
+// To build diagnostics
+export function buildDiagnostics(
+  input: ReportInput,
+  jobId: string,
+  probe: WarmupProbeResult
+): BidDiagnostics {
+  const { taskType, contextFit, timeEst, tokenEst, accuracyEst } = input;
+  const { verdict, reasons } = computeVerdict(accuracyEst, timeEst, tokenEst, contextFit);
 
-    model: {
-      name:           modelName,
-      parameter_size: modelInfo?.details?.parameter_size ?? null,
-      quantization:   modelInfo?.details?.quantization_level ?? null,
-      context_window: contextWindow,
-    },
-
-    hardware,
-
-    time: {
-      estimated_ms:          timeEst.estimatedMs,
-      estimated_human:       formatDuration(timeEst.estimatedMs),
-      prompt_processing_ms:  timeEst.promptMs ?? null,
-      token_generation_ms:   timeEst.evalMs   ?? null,
-      confidence:            timeEst.confidence,
-    },
+  return {
+    job_id:       jobId,
+    generated_at: new Date().toISOString(),
+    task_type:    taskType.type,
+    task_label:   taskType.label,
 
     tokens: {
       input:                tokenEst.input,
       output_estimated:     tokenEst.output,
       total_estimated:      tokenEst.total,
-      context_window:       contextWindow,
+      context_window:       contextFit.contextWindow ?? null,
       context_used_percent: tokenEst.contextPercent,
+    },
+
+    time: {
+      estimated_ms:          timeEst.estimatedMs,
+      prompt_processing_ms:  timeEst.promptMs ?? null,
+      token_generation_ms:   timeEst.evalMs   ?? null,
+      time_confidence:       timeEst.confidence,
     },
 
     accuracy: {
       score:       accuracyEst.score,
-      percent:     accuracyEst.percent,
       confidence:  accuracyEst.confidence,
       context_fit: contextFit.grade,
+    },
+
+    hardware: {
+      generation_tokens_per_sec: probe.ok ? probe.tokensPerSec     : null,
+      prompt_tokens_per_sec:     probe.ok ? probe.promptTokPerSec  : null,
     },
 
     verdict,
@@ -118,17 +145,19 @@ export function buildBid(input: ReportInput, prompt: string): Bid {
   };
 }
 
-// Writing bid to a bid.json file
-export async function writeBid(bid: Bid, outputDir = "."): Promise<string> {
-  const filePath = path.resolve(outputDir, "bid.json");
-  await fs.writeFile(filePath, JSON.stringify(bid, null, 2), "utf-8");
-  return filePath;
-}
+// Writing bid to a bid.json and a bid.diagnostic.json file
+export async function writeBid(
+  bid: Bid,
+  diagnostics: BidDiagnostics,
+  outputDir = "."
+): Promise<{ bidPath: string; diagnosticsPath: string }> {
+  const bidPath         = path.resolve(outputDir, "bid.json");
+  const diagnosticsPath = path.resolve(outputDir, "bid.diagnostics.json");
 
-function resolveHardware(probe: WarmupProbeResult): Bid["hardware"] {
-  if (!probe.ok) return { generation_tokens_per_sec: null, prompt_tokens_per_sec: null };
-  return {
-    generation_tokens_per_sec: probe.tokensPerSec,
-    prompt_tokens_per_sec:     probe.promptTokPerSec,
-  };
+  await Promise.all([
+    fs.writeFile(bidPath,         JSON.stringify(bid,         null, 2), "utf-8"),
+    fs.writeFile(diagnosticsPath, JSON.stringify(diagnostics, null, 2), "utf-8"),
+  ]);
+
+  return { bidPath, diagnosticsPath };
 }

@@ -1,5 +1,4 @@
 // Ollama API types
-
 export interface OllamaModel {
   name: string;
   modified_at: string;
@@ -32,22 +31,39 @@ export interface OllamaGenerateResponse {
   eval_duration?: number;       // nanoseconds
 }
 
+export interface OllamaModelInfo {
+  // Allow any model-architecture-specific keys (e.g. llama.context_length, gemma3.block_count)
+  [key: string]: unknown;
+
+  // Well-known keys we actually use — typed explicitly for safe access
+  "general.architecture"?: string;
+  "general.parameter_count"?: number;
+  "general.file_type"?: number;
+  "general.quantization_version"?: number;
+  "tokenizer.ggml.model"?: string;
+  "tokenizer.ggml.bos_token_id"?: number;
+  "tokenizer.ggml.eos_token_id"?: number;
+}
+
 export interface OllamaShowResponse {
   modelfile?: string;
-  parameters?: string;
+  parameters?: string;           // e.g. "temperature 0.7\nnum_ctx 2048"
   template?: string;
+  license?: string;
+  capabilities?: string[];       // e.g. ["completion", "vision"]
+  modified_at?: string;          // ISO timestamp
   details?: {
-    format: string;
-    family: string;
+    parent_model?: string;
+    format: string;              // e.g. "gguf"
+    family: string;              // e.g. "llama", "gemma3"
     families: string[];
     parameter_size: string;
     quantization_level: string;
   };
-  model_info?: Record<string, unknown>;
+  model_info?: OllamaModelInfo;
 }
 
 // Daemon & model check
-
 export type DaemonCheckResult =
   | { ok: true; models: OllamaModel[] }
   | { ok: false; error: string };
@@ -57,7 +73,6 @@ export type ModelCheckResult =
   | { running: false; error?: string; allModels?: string[] };
 
 // Task classification
-
 export type TaskType =
   | "code_generation"
   | "summarization"
@@ -76,7 +91,6 @@ export interface TaskClassification {
 }
 
 // Context fit
-
 export type ContextGrade = "excellent" | "good" | "tight" | "overflow" | "unknown";
 
 export interface ContextFitResult {
@@ -87,7 +101,6 @@ export interface ContextFitResult {
 }
 
 // Probe results
-
 export type WarmupProbeResult =
   | {
       ok: true;
@@ -107,7 +120,6 @@ export type AccuracyProbeResult =
 export type ConfidenceLevel = "high" | "medium" | "low" | "unknown";
 
 // Estimates
-
 export interface TimeEstimate {
   estimatedMs: number | null;
   promptMs?: number;
@@ -129,7 +141,6 @@ export interface AccuracyEstimate {
 }
 
 // Report input
-
 export interface ReportInput {
   modelName: string;
   modelInfo: OllamaShowResponse | null;
@@ -143,61 +154,51 @@ export interface ReportInput {
 }
 
 // CLI options
-
 export interface PreflightOptions {
   estimateOnly: boolean;
   yes: boolean;
   skipAccuracy: boolean;
 }
 
-// Bid
- 
-export interface BidToken {
-  input: number;
-  output_estimated: number;
-  total_estimated: number;
-  context_window: number | null;
-  context_used_percent: number | null;
-}
- 
-export interface BidTime {
-  estimated_ms: number | null;
-  estimated_human: string;
-  prompt_processing_ms: number | null;
-  token_generation_ms: number | null;
-  confidence: ConfidenceLevel;
-}
- 
-export interface BidAccuracy {
-  score: number | null;           // 1–10
-  percent: number | null;         // 0–100
-  confidence: ConfidenceLevel;
-  context_fit: ContextGrade;
-}
- 
-export interface BidHardware {
-  generation_tokens_per_sec: number | null;
-  prompt_tokens_per_sec: number | null;
-}
- 
+// On-chain Bid schema
+// Fields node_id, reputation, and signature will be handled outside this tool
 export interface Bid {
-  schema_version: "1.0";
-  bid_at: string;
-  task: {
-    prompt_excerpt: string;       // first 120 chars of prompt
-    task_type: TaskType;
-    task_label: string;
-  };
-  model: {
-    name: string;
-    parameter_size: string | null;
-    quantization: string | null;
+  job_id: string;                 // from the job event on-chain
+  placed_at: number;              // unix timestamp (seconds)
+  token: number;                  // total estimated tokens to complete the task
+  time_requires: number;          // estimated time in milliseconds
+  confidence: number;             // 0.0–1.0 float
+  model: string;                  // ollama model name
+}
+
+// For local diagnostic
+export interface BidDiagnostics {
+  job_id: string;
+  generated_at: string;
+  task_type: TaskType;
+  task_label: string;
+  tokens: {
+    input: number;
+    output_estimated: number;
+    total_estimated: number;
     context_window: number | null;
+    context_used_percent: number | null;
   };
-  hardware: BidHardware;
-  time: BidTime;
-  tokens: BidToken;
-  accuracy: BidAccuracy;
+  time: {
+    estimated_ms: number | null;
+    prompt_processing_ms: number | null;
+    token_generation_ms: number | null;
+    time_confidence: ConfidenceLevel;
+  };
+  accuracy: {
+    score: number | null;
+    confidence: ConfidenceLevel;
+    context_fit: ContextGrade;
+  };
+  hardware: {
+    generation_tokens_per_sec: number | null;
+    prompt_tokens_per_sec: number | null;
+  };
   verdict: "accept" | "caution" | "reject";
   verdict_reasons: string[];
 }
