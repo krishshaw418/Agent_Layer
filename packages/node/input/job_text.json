@@ -1,0 +1,9 @@
+{
+  "job_id": "job_12345",
+  "created_at": 1713440000,
+  "task": {
+    "type": "summarization",
+    "input": { "type": "text", "text": "What's the poem Twinkle Twinkle little star?" },
+    "expected_output": "text"
+  }
+}

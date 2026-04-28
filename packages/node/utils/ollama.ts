@@ -68,7 +68,6 @@ export async function getModelInfo(modelName: string): Promise<OllamaShowRespons
 export interface GenerateOptions {
   num_predict?: number;
   temperature?: number;
-  stream?: boolean;
 }
 
 export async function generate(

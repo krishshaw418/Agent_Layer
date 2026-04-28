@@ -1,8 +1,0 @@
-{
-  "job_id": "job_local",
-  "placed_at": 1777256520,
-  "token": 185,
-  "time_requires": 3523,
-  "confidence": 0.42,
-  "model": "qwen2:0.5b"
-}

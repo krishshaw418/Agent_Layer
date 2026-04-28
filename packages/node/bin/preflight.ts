@@ -11,35 +11,49 @@ program
   .name("preflight")
   .description(
     chalk.hex("#a78bfa")("⚡ Pre-flight estimator for Ollama model requests\n") +
-    chalk.gray("  Estimates time, token burn, and accuracy before sending your prompt.")
+    chalk.gray("  Reads a job JSON file from chain, checks model capabilities, and generates a bid.")
   )
   .version("1.0.0");
 
 program
-  .command("run <model> <prompt>")
-  .description("Analyse a prompt against a model and generate a bid")
-  .option("-e, --estimate-only",  "Show estimates but do not offer to run the request", false)
-  .option("-y, --yes",            "Auto-confirm and run the real request after estimates", false)
-  .option("--skip-accuracy",      "Skip the accuracy meta-probe (faster, saves ~5 tokens)", false)
-  .option("--job-id <id>",        "Job ID from the smart contract event", "job_local")
+  .command("run <model>")
+  .description("Run preflight checks and generate bid.json for a job")
+  .requiredOption("--job <path>",     "Path to the job JSON file pulled from chain")
+  .option("-e, --estimate-only",      "Show estimates but do not offer to run the request", false)
+  .option("-y, --yes",                "Auto-confirm and run the real request after estimates", false)
+  .option("--skip-accuracy",          "Skip the accuracy meta-probe (faster, saves ~5 tokens)", false)
   .addHelpText("after", `
 ${chalk.gray("Examples:")}
-  ${chalk.white('$ preflight run qwen2:0.5b "Summarize this document" --job-id job_12345')}
-  ${chalk.white('$ preflight run qwen2:0.5b "Write a REST API" --estimate-only')}
-  ${chalk.white('$ preflight run qwen2:0.5b "What is 2+2?" --yes --skip-accuracy')}
+  ${chalk.white("$ preflight run qwen2:0.5b --job ./job.json")}
+  ${chalk.white("$ preflight run qwen2:0.5b --job ./job.json --estimate-only")}
+  ${chalk.white("$ preflight run qwen2:0.5b --job ./job.json --yes --skip-accuracy")}
+
+${chalk.gray("Job file format (from chain):")}
+  ${chalk.gray("{")}
+  ${chalk.gray('  "job_id": "job_12345",')}
+  ${chalk.gray('  "task": {')}
+  ${chalk.gray('    "type": "summarization",')}
+  ${chalk.gray('    "input": { "type": "file_url", "url": "...", "mime": "application/pdf", "size_bytes": 204800 },')}
+  ${chalk.gray('    "expected_output": "text"')}
+  ${chalk.gray("  }")}
+  ${chalk.gray("}")}
+
+${chalk.gray("Supported task types:")}
+  ${chalk.white("code_generation  summarization  translation  question_answer")}
+  ${chalk.white("creative_writing  analysis  extraction")}
 
 ${chalk.gray("Environment:")}
   ${chalk.white("OLLAMA_HOST")}   Ollama base URL ${chalk.gray("(default: http://localhost:11434)")}
 `)
-  .action(async (model: string, prompt: string, opts: PreflightOptions & { jobId: string }) => {
-    await preflightCommand(model, prompt, opts, opts.jobId);
+  .action(async (model: string, opts: PreflightOptions & { job: string }) => {
+    await preflightCommand(model, opts.job, opts);
   });
 
-// ── Debug: inspect raw model metadata ────────────────────────────────────────
+// inspect command
 
 program
   .command("inspect <model>")
-  .description("Print raw model metadata from Ollama (debug)")
+  .description("Print raw model metadata from Ollama — useful for debugging capability issues")
   .action(async (model: string) => {
     const info = await getModelInfo(model);
 
@@ -59,16 +73,16 @@ program
     console.log(dim("─".repeat(56)));
 
     console.log();
+    console.log(lbl("  capabilities"));
+    console.log(dim("    ") + white(info.capabilities?.join(", ") ?? "(none returned)"));
+
+    console.log();
     console.log(lbl("  details"));
     console.log(dim(JSON.stringify(info.details, null, 4).replace(/^/gm, "    ")));
 
     console.log();
-    console.log(lbl("  parameters (raw string)"));
+    console.log(lbl("  parameters (raw)"));
     console.log(dim("    ") + white(info.parameters?.replace(/\n/g, " | ") ?? "(none)"));
-
-    console.log();
-    console.log(lbl("  capabilities"));
-    console.log(dim("    ") + white(info.capabilities?.join(", ") ?? "(none)"));
 
     console.log();
     console.log(lbl("  model_info — context-related keys"));

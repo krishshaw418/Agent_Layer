@@ -151,8 +151,8 @@ export async function writeBid(
   diagnostics: BidDiagnostics,
   outputDir = "."
 ): Promise<{ bidPath: string; diagnosticsPath: string }> {
-  const bidPath         = path.resolve(outputDir, "bid.json");
-  const diagnosticsPath = path.resolve(outputDir, "bid.diagnostics.json");
+  const bidPath         = path.resolve(outputDir, "output/bid.json");
+  const diagnosticsPath = path.resolve(outputDir, "output/bid.diagnostics.json");
 
   await Promise.all([
     fs.writeFile(bidPath,         JSON.stringify(bid,         null, 2), "utf-8"),

@@ -1,0 +1,8 @@
+{
+  "job_id": "job_12345",
+  "placed_at": 1777290562,
+  "token": 103,
+  "time_requires": 3063,
+  "confidence": 0.68,
+  "model": "qwen2:0.5b"
+}

@@ -229,3 +229,32 @@ export function renderBidSummary(
   console.log();
   console.log(`  ${dim("confidence score  →")} ${white(String(bid.confidence))}  ${dim("token estimate  →")} ${white(String(bid.token))}`);
 }
+
+// Capability error renderer
+export function renderCapabilityError(
+  modelName: string,
+  job: import("../types.js").Job,
+  capCheck: import("../types.js").CapabilityCheckResult
+): void {
+  const line = dim("─".repeat(56));
+  console.log();
+  console.log(line);
+  console.log(bad("  ✘  CAPABILITY MISMATCH") + dim("  │  no bid placed"));
+  console.log(line);
+  console.log();
+  console.log(`${dim("  Job ID     ")}  ${white(job.job_id)}`);
+  console.log(`${dim("  Task type  ")}  ${white(job.task.type)}`);
+  console.log(`${dim("  Input mime ")}  ${white(job.task.input.mime ?? "(none)")}`);
+  console.log(`${dim("  Model      ")}  ${white(modelName)}`);
+  console.log();
+  console.log(`${dim("  Required   ")}  ${bad(capCheck.required.join(", "))}`);
+  console.log(`${dim("  Available  ")}  ${capCheck.available.length ? good(capCheck.available.join(", ")) : dim("(none returned)")}`);
+  console.log(`${dim("  Missing    ")}  ${bad(capCheck.missing.join(", "))}`);
+  console.log();
+  if (capCheck.reason) {
+    console.log(`  ${dim(capCheck.reason)}`);
+    console.log();
+  }
+  console.log(dim("─".repeat(56)));
+  console.log();
+}

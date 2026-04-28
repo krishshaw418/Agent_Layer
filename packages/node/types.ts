@@ -21,8 +21,6 @@ export interface OllamaGenerateResponse {
   model: string;
   created_at: string;
   response: string;
-  done: boolean;
-  context?: number[];
   total_duration?: number;      // nanoseconds
   load_duration?: number;       // nanoseconds
   prompt_eval_count?: number;
@@ -201,4 +199,70 @@ export interface BidDiagnostics {
   };
   verdict: "accept" | "caution" | "reject";
   verdict_reasons: string[];
+}
+
+
+// Job Schema
+export type InputMime =
+  | "application/pdf"
+  | "application/json"
+  | "text/plain"
+  | "image/png"
+  | "image/jpeg"
+  | "image/webp"
+  | "image/gif";
+ 
+export type InputType = "file_url" | "text" | "image_url";
+ 
+export interface JobInput {
+  type: InputType;
+  url?: string;
+  text?: string;
+  mime?: InputMime;
+  size_bytes?: number;
+}
+ 
+export type JobTaskType =
+  | "code_generation"
+  | "summarization"
+  | "translation"
+  | "question_answer"
+  | "creative_writing"
+  | "analysis"
+  | "extraction";
+ 
+export interface JobTask {
+  type: JobTaskType;
+  input: JobInput;
+  expected_output: "text" | "json" | "image";
+}
+ 
+export interface Job {
+  job_id: string;
+  created_at: number;
+  task: JobTask;
+  constraints?: {
+    max_token?: number;
+    deadline?: number;
+    priority?: "fast" | "balanced" | "quality";
+    quality?: "low" | "medium" | "high";
+  };
+  requirements?: {
+    min_reputation?: number;
+  };
+  metadata?: {
+    user_address?: string;
+    [key: string]: unknown;
+  };
+}
+ 
+// Ollama Capability check
+export type OllamaCapability = "completion" | "vision" | "image_generation" | "tools" | string;
+ 
+export interface CapabilityCheckResult {
+  ok: boolean;
+  required: OllamaCapability[];
+  available: OllamaCapability[];
+  missing: OllamaCapability[];
+  reason?: string;
 }

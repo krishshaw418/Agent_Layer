@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { checkModel, getModelInfo, generate, OLLAMA_HOST } from "../../utils/ollama.js";
 import {
-  estimateTokens,
   classifyTask,
   estimateOutputTokens,
   analyzeContextFit,
@@ -12,8 +11,10 @@ import {
 } from "../../utils/tokens.js";
 import { runWarmupProbe, estimateTime, formatDuration } from "../../probes/warmup.js";
 import { runAccuracyProbe, adjustAccuracyScore } from "../../probes/accuracy.js";
-import { renderReport, renderBidSummary } from "../../utils/report.js";
+import { renderReport, renderBidSummary, renderCapabilityError } from "../../utils/report.js";
 import { buildBid, buildDiagnostics, writeBid } from "../../utils/bid.js";
+import { loadJob, buildPromptFromJob, estimateInputTokensFromJob } from "../../utils/job.js";
+import { checkCapabilities } from "../../utils/capability.js";
 import type { PreflightOptions } from "../../types.js";
 
 const dim    = chalk.gray;
@@ -26,22 +27,37 @@ const lbl    = chalk.hex("#7dd3fc");
 // Main command
 export async function preflightCommand(
   model: string,
-  prompt: string,
+  jobFile: string,
   opts: PreflightOptions,
-  jobId: string
 ): Promise<void> {
   console.log();
   console.log(accent("  ⚡ ollama-preflight") + dim(" — estimating before you commit"));
-  console.log(dim(`  job: ${jobId}`));
+  console.log();
+
+  // Load & validate job file
+  const spinner = ora({ text: dim(`Loading job from ${jobFile}…`), color: "cyan" }).start();
+  const jobResult = await loadJob(jobFile);
+
+  if (!jobResult.ok) {
+    spinner.fail(bad(`Job file error: ${jobResult.error}`));
+    process.exit(1);
+  }
+
+  const { job } = jobResult;
+  spinner.succeed(good(`Job loaded → ${job.job_id}`) + dim(`  task: ${job.task.type}`));
+  console.log(
+    dim(`  input type: ${job.task.input.type}`) +
+    (job.task.input.mime ? dim(` · mime: ${job.task.input.mime}`) : "") +
+    (job.task.input.size_bytes ? dim(` · size: ${(job.task.input.size_bytes / 1024).toFixed(1)} KB`) : "")
+  );
   console.log();
 
   // Daemon & model health check
-  const spinner = ora({ text: dim("Checking Ollama daemon…"), color: "cyan" }).start();
+  spinner.start(dim("Checking Ollama daemon…"));
   const modelStatus = await checkModel(model);
 
   if (!modelStatus.running) {
     spinner.fail(bad(`Model "${model}" is not available.`));
-
     if (modelStatus.allModels?.length) {
       console.log(dim("\n  Available models:"));
       for (const m of modelStatus.allModels) console.log(dim(`    • ${m}`));
@@ -51,7 +67,6 @@ export async function preflightCommand(
       console.log(bad(`\n  Could not reach Ollama at ${OLLAMA_HOST}`));
       console.log(dim("  Make sure Ollama is running: ollama serve"));
     }
-
     process.exit(1);
   }
 
@@ -61,15 +76,37 @@ export async function preflightCommand(
   spinner.start(dim("Fetching model info…"));
   const modelInfo     = await getModelInfo(model);
   const contextWindow = parseContextWindow(modelInfo);
+  const capabilities  = modelInfo?.capabilities ?? [];
   spinner.succeed(
-    dim(`Context window: ${contextWindow != null ? contextWindow.toLocaleString() + " tokens" : "unknown"}`)
+    dim(`Context window: ${contextWindow != null ? contextWindow.toLocaleString() + " tokens" : "unknown"}`) +
+    dim(`  ·  capabilities: [${capabilities.length ? capabilities.join(", ") : "none returned"}]`)
   );
 
-  // Local prompt analysis
-  const inputTokens     = estimateTokens(prompt);
-  const taskType        = classifyTask(prompt);
-  const estimatedOutput = estimateOutputTokens(inputTokens, taskType);
-  const contextFit      = analyzeContextFit(inputTokens, estimatedOutput, contextWindow);
+  // Capability check
+  spinner.start(dim("Checking model capabilities against task requirements…"));
+  const capCheck = checkCapabilities(job.task.type, job.task.input, capabilities);
+
+  if (!capCheck.ok) {
+    spinner.fail(bad("Capability mismatch — bid will not be placed"));
+    renderCapabilityError(model, job, capCheck);
+    process.exit(0);
+  }
+
+  spinner.succeed(good(`Capabilities satisfied: [${capCheck.required.join(", ")}]`));
+
+  // Build prompt & estimate input tokens
+  const prompt      = buildPromptFromJob(job.task);
+  const inputTokens = estimateInputTokensFromJob(job.task);
+  const taskType    = classifyTask(prompt);
+
+  // Apply job constraint
+  const maxTokenConstraint = job.constraints?.max_token ?? null;
+  const rawOutputEst       = estimateOutputTokens(inputTokens, taskType);
+  const estimatedOutput    = maxTokenConstraint != null
+    ? Math.min(rawOutputEst, maxTokenConstraint)
+    : rawOutputEst;
+
+  const contextFit = analyzeContextFit(inputTokens, estimatedOutput, contextWindow);
 
   // Warm-up probe
   spinner.start(dim("Running warm-up probe (1 token)…"));
@@ -79,6 +116,24 @@ export async function preflightCommand(
     spinner.succeed(dim(`Generation speed: ${probe.tokensPerSec ?? "?"} tok/s`));
   } else {
     spinner.warn(warn("Warm-up probe failed — time estimates will be unavailable"));
+  }
+
+  // Deadline feasibility check
+  if (job.constraints?.deadline != null && probe.ok) {
+    const timeEst = estimateTime(inputTokens, estimatedOutput, probe);
+    const deadlineMs = job.constraints.deadline;
+
+    if (timeEst.estimatedMs != null && timeEst.estimatedMs > deadlineMs) {
+      console.log();
+      console.log(bad("  ✘  DEADLINE NOT MET — bid will not be placed"));
+      console.log();
+      console.log(`${dim("  Estimated time")}  ${chalk.white(formatDuration(timeEst.estimatedMs))}`);
+      console.log(`${dim("  Job deadline  ")}  ${chalk.white(formatDuration(deadlineMs))}`);
+      console.log();
+      console.log(dim("  This node cannot complete the task within the required deadline."));
+      console.log(dim("  No bid.json has been written.\n"));
+      process.exit(0);
+    }
   }
 
   // Accuracy probe
@@ -116,8 +171,8 @@ export async function preflightCommand(
 
   // Build & write bid.json and bid.diagnostics.json
   spinner.start(dim("Writing bid files…"));
-  const bid         = buildBid(reportInput, jobId);
-  const diagnostics = buildDiagnostics(reportInput, jobId, probe);
+  const bid         = buildBid(reportInput, job.job_id);
+  const diagnostics = buildDiagnostics(reportInput, job.job_id, probe);
   const { bidPath, diagnosticsPath } = await writeBid(bid, diagnostics, process.cwd());
   spinner.succeed(good("Bid files written"));
 
@@ -159,13 +214,13 @@ export async function preflightCommand(
 async function executeRequest(model: string, prompt: string): Promise<void> {
   console.log();
   const spinner = ora({ text: chalk.white("Running your request…"), color: "cyan" }).start();
-  const start   = Date.now();
 
   try {
-    const result  = await generate(model, prompt);
-    const elapsed = Date.now() - start;
+    const result     = await generate(model, prompt);
+    const elapsedMs  = (result.total_duration ?? 0) / 1_000_000;
+    const elapsedSec = (elapsedMs / 1_000).toFixed(1);
 
-    spinner.succeed(good(`Done in ${(elapsed / 1_000).toFixed(1)}s`));
+    spinner.succeed(good(`Done in ${elapsedSec}s`));
 
     console.log();
     console.log(lbl("  RESPONSE"));
@@ -180,7 +235,7 @@ async function executeRequest(model: string, prompt: string): Promise<void> {
     console.log(dim("  " + "─".repeat(54)));
     console.log(
       dim(`  Actual: ${result.eval_count ?? "?"} output tokens`) +
-      dim(`  │  ${formatDuration(elapsed)} total`)
+      dim(`  │  ${elapsedSec}s total`)
     );
     console.log();
   } catch (err) {
