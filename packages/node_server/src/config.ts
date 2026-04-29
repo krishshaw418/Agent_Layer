@@ -8,5 +8,6 @@ export const config = {
     redis_host: parsedEnv.REDIS_HOST,
     redis_port: parsedEnv.REDIS_PORT,
     auth_secret: parsedEnv.WEBHOOK_SECRET,
-    channel_name: parsedEnv.CHANNEL_NAME
+    channel_name: parsedEnv.CHANNEL_NAME,
+    db_uri: parsedEnv.DB_URI
 }
