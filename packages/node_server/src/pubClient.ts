@@ -1,14 +1,14 @@
 import { createClient } from "redis";
 import { config } from "./config";
 
-const redisClient = createClient({
+const pubClient = createClient({
     url: `redis://${config.redis_host}:${config.redis_port}`
 });
 
-redisClient.on('error', (err) => {
+pubClient.on('error', (err) => {
     console.error("Redis connection error: ", err);
 });
 
-await redisClient.connect();
+await pubClient.connect();
 
-export default redisClient;
+export default pubClient;

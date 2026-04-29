@@ -25,26 +25,46 @@ const accent = chalk.hex("#a78bfa");
 const lbl    = chalk.hex("#7dd3fc");
 
 // Main command
+
+// Overloads
+// When called from the CLI, pass a file path string.
+// When called programmatically, pass a Job object directly.
+export async function preflightCommand(model: string, job: import("../../types.js").Job, opts: PreflightOptions): Promise<import("../../types.js").Bid | null>;
+export async function preflightCommand(model: string, jobFile: string, opts: PreflightOptions): Promise<import("../../types.js").Bid | null>;
 export async function preflightCommand(
   model: string,
-  jobFile: string,
+  jobOrFile: string | import("../../types.js").Job,
   opts: PreflightOptions,
-): Promise<void> {
+): Promise<import("../../types.js").Bid | null> {
   console.log();
   console.log(accent("  ⚡ ollama-preflight") + dim(" — estimating before you commit"));
   console.log();
 
-  // Load & validate job file
-  const spinner = ora({ text: dim(`Loading job from ${jobFile}…`), color: "cyan" }).start();
-  const jobResult = await loadJob(jobFile);
+  // Load & validate job
+  let job: import("../../types.js").Job;
 
-  if (!jobResult.ok) {
-    spinner.fail(bad(`Job file error: ${jobResult.error}`));
-    process.exit(1);
+  // Spinner is hoisted here so it's available throughout the function
+  const spinner = ora({ color: "cyan" });
+
+  if (typeof jobOrFile === "string") {
+    // CLI path: load from file
+    spinner.start(dim(`Loading job from ${jobOrFile}…`));
+    const jobResult = await loadJob(jobOrFile);
+
+    if (!jobResult.ok) {
+      spinner.fail(bad(`Job file error: ${jobResult.error}`));
+      process.exit(1);
+    }
+
+    job = jobResult.job;
+    spinner.succeed(good(`Job loaded → ${job.job_id}`) + dim(`  task: ${job.task.type}`));
+  } else {
+    // Programmatic path: job object passed directly from worker
+    // No spinner needed — caller already knows the job
+    job = jobOrFile;
+    console.log(good(`  Job → ${job.job_id}`) + dim(`  task: ${job.task.type}`));
   }
 
-  const { job } = jobResult;
-  spinner.succeed(good(`Job loaded → ${job.job_id}`) + dim(`  task: ${job.task.type}`));
   console.log(
     dim(`  input type: ${job.task.input.type}`) +
     (job.task.input.mime ? dim(` · mime: ${job.task.input.mime}`) : "") +
@@ -72,7 +92,7 @@ export async function preflightCommand(
 
   spinner.succeed(good(`Model "${model}" is loaded and ready`));
 
-  // Model metadata 
+  // Model metadata
   spinner.start(dim("Fetching model info…"));
   const modelInfo     = await getModelInfo(model);
   const contextWindow = parseContextWindow(modelInfo);
@@ -83,13 +103,14 @@ export async function preflightCommand(
   );
 
   // Capability check
+  // If the model can't serve the task, exit immediately — no bid is created.
   spinner.start(dim("Checking model capabilities against task requirements…"));
   const capCheck = checkCapabilities(job.task.type, job.task.input, capabilities);
 
   if (!capCheck.ok) {
     spinner.fail(bad("Capability mismatch — bid will not be placed"));
     renderCapabilityError(model, job, capCheck);
-    process.exit(0);
+    return null;   // no bid — capability mismatch
   }
 
   spinner.succeed(good(`Capabilities satisfied: [${capCheck.required.join(", ")}]`));
@@ -132,7 +153,7 @@ export async function preflightCommand(
       console.log();
       console.log(dim("  This node cannot complete the task within the required deadline."));
       console.log(dim("  No bid.json has been written.\n"));
-      process.exit(0);
+      return null;
     }
   }
 
@@ -188,13 +209,13 @@ export async function preflightCommand(
     }]);
     if (!proceed) {
       console.log(dim("\n  Request cancelled.\n"));
-      return;
+      return bid;
     }
   }
 
   if (opts.yes) {
     await executeRequest(model, prompt);
-    return;
+    return bid;
   }
 
   if (!opts.estimateOnly) {
@@ -208,6 +229,8 @@ export async function preflightCommand(
     if (proceed) await executeRequest(model, prompt);
     else console.log(dim("\n  Request cancelled. No tokens were burned.\n"));
   }
+
+  return bid;
 }
 
 // Execute real request
