@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { IERC20 } from "./interfaces/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IEscrow } from "./Escrow.sol";
+import { IVault } from "./Vault.sol";
+
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+using SafeERC20 for IERC20;
 
 contract EntryPoint {
     enum JobStatus {
@@ -67,6 +73,10 @@ contract EntryPoint {
     address public coordinator;
     address public deployer;
 
+    IERC20 public token;
+    IEscrow public escrow;
+    IVault public vault;
+
     uint256 public constant MAX_BID = 5;
     uint256 public constant REP_REWARD = 2;
     uint256 public constant REP_PENALTY = 5;
@@ -76,10 +86,15 @@ contract EntryPoint {
     event JobCreated(string jobId, address creator, uint256 maxTokenAmount, uint256 deadline);
     event JobAssigned(string jobId, address node);
     event BidPlaced(string bidId, string jobId, address bidder, uint256 tokenAmount);
+    event EscrowCreated(string jobId, string bidId, address payer, address payee, uint256 amount);
+    event EscrowReleased(string jobId, uint256 amount);
+    event EscrowRefund(string jobId);
 
-    constructor(address _coordinator, address _token) {
+    constructor(address _escrowAddress, address _coordinator, address _token, address _vaultAddress) {
+        escrow = IEscrow(_escrowAddress);
         coordinator = _coordinator;
         token = IERC20(_token);
+        vault = IVault(_vaultAddress);
         deployer = msg.sender;
     }
 
@@ -143,7 +158,8 @@ contract EntryPoint {
             exists: true
         });
         
-        // TODO: Lock funds in escrow
+        vault.transfer(_params.creator, address(escrow), _params.maxTokenAmount);
+        _createEscrow(_params.jobId, "", jobs[jobKey].creator, address(0), jobs[jobKey].maxTokenAmount);
 
         emit JobCreated(_params.jobId, _params.creator, _params.maxTokenAmount, _params.deadline);
     }
@@ -161,7 +177,8 @@ contract EntryPoint {
         // No bids placed mark as failed and refund
         if (jobs[jobKey].bidCount == 0) {
             jobs[jobKey].status = JobStatus.FAILED;
-            // TODO: Refund
+            refundEscrow(_jobId);
+            emit EscrowRefund(_jobId);
             return;
         }
 
@@ -172,6 +189,8 @@ contract EntryPoint {
         jobs[jobKey].status = JobStatus.IN_PROGRESS;
         nodeToJobs[node].push(jobKey);
         jobToAssignee[jobKey] = node;
+
+        escrow.setPayee(_jobId, node);
 
         emit JobAssigned(_jobId, node);
     }
@@ -194,7 +213,7 @@ contract EntryPoint {
             reputation[node] += REP_REWARD;
         }
 
-        // TODO: Release payment
+        releaseEscrowFunds(_jobId);
     }
 
     function markJobAsFailed(string memory _jobId) public onlyCoordinator {
@@ -216,7 +235,9 @@ contract EntryPoint {
             reputation[node] = 0;
         }
 
-        // TODO: Refund
+        refundEscrow(_jobId);
+
+        emit EscrowRefund(_jobId);
     }
 
     function getJobDetails(string memory _jobId) public view returns (string memory, address, uint256, uint256, uint256, JobPriority, JobQuality, uint256, JobStatus, Bid memory, uint256, uint256) {
@@ -364,5 +385,30 @@ contract EntryPoint {
 
     function getNodeReputation(address node) public view returns (uint256) {
         return reputation[node];
+    }
+
+    // Escrow contract interactions
+    function _createEscrow(string memory _jobId, string memory _bidId, address _payer, address _payee, uint256 _amount) internal {
+        escrow.createEscrow(_jobId, _bidId, _payer, _payee, _amount);
+        emit EscrowCreated(_jobId, _bidId, _payer, _payee, _amount);
+    }
+
+    function releaseEscrowFunds(string memory _jobId) public onlyCoordinator {
+        bytes32 jobKey = _hashString(_jobId);
+        uint256 amount = jobs[jobKey].bestBid.tokenAmount;
+
+        require(amount > 0, "No accepted bid");
+        
+        escrow.releaseFunds(_jobId, amount);
+        emit EscrowReleased(_jobId, amount);
+    }
+
+    function refundEscrow(string memory _jobId) public onlyCoordinator {
+        escrow.refund(_jobId);
+        emit EscrowRefund(_jobId);
+    }
+
+    function getEscrowDetails(string memory _jobId) public view returns (string memory, string memory, address, address, uint256, bool) {
+        return escrow.getEscrowDetails(_jobId);
     }
 }
