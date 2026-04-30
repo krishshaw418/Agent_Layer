@@ -9,5 +9,9 @@ export const config = {
     redis_port: parsedEnv.REDIS_PORT,
     auth_secret: parsedEnv.WEBHOOK_SECRET,
     channel_name: parsedEnv.CHANNEL_NAME,
-    db_uri: parsedEnv.DB_URI
+    db_uri: parsedEnv.DB_URI,
+    rpc_url: parsedEnv.BASE_SEPOLIA_RPC_URL,
+    priv_key: parsedEnv.PRIVATE_KEY,
+    contract_add: parsedEnv.CONTRACT_ADDRESS,
+    node_add: parsedEnv.PUBLIC_ADDRESS
 }
