@@ -1,13 +1,14 @@
 import type { Request, Response } from "express";
 import Router from "express";
-import { jobSchema } from "./schema";
+import { jobIdSchema } from "./schema";
 import pubClient from "./pubClient";
 import { config } from "./config";
+import { db } from "./db";
 
 const router = Router();
 
 router.post("/new-job", async (req: Request, res: Response) => {
-  const parsed = jobSchema.safeParse(req.body);
+  const parsed = jobIdSchema.safeParse(req.body);
 
   if (!parsed.success) {
     return res.status(400).json({
@@ -17,8 +18,13 @@ router.post("/new-job", async (req: Request, res: Response) => {
   }
 
   try {
+    const jobs = db.collection('job');
+
+    // Fetch the job using job_id
+    const job = await jobs.findOne({ id: parsed.data.job_id });
+
     // Publish to jobs channel for nodes to bid
-    const listeners = await pubClient.publish(config.channel_name, JSON.stringify(parsed.data));
+    const listeners = await pubClient.publish(config.channel_name, JSON.stringify(job));
     console.log("Number of listeners: ", listeners);
 
     // Return acknowledgement to the indexer
