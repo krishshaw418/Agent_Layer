@@ -1,0 +1,47 @@
+## Estimate before execution
+
+The token resource helps you estimate usage without sending a real job to the network.
+
+<ExampleTabs
+  curl={String.raw`# Token estimation currently happens in the SDK.
+# Use the TypeScript or JavaScript examples below.`}
+  javascript={String.raw`const estimate = client.token.estimate({
+  messages: [{ role: "user", content: "How does decentralized AI billing work?" }],
+  max_tokens: 512
+});
+
+console.log(estimate);`}
+  typescript={String.raw`const estimate = client.token.estimate({
+  messages: [{ role: "user", content: "How does decentralized AI billing work?" }],
+  max_tokens: 512
+});
+
+console.log(estimate);`}
+/>
+
+## Inputs
+
+You can estimate tokens from either:
+
+- `messages` for chat-style prompts
+- `input` for raw text or arrays of text
+
+## Example response
+
+<CodeBlock
+  language="json"
+  title="estimate.json"
+  code={String.raw`{
+  "prompt_tokens": 14,
+  "estimated_completion_tokens": 512,
+  "total_tokens": 526
+}`}
+/>
+
+## Recommended uses
+
+- Cost previews in your UI
+- Quota enforcement before dispatch
+- Batch planning and budgeting
+- Choosing between `latency` and `cost` strategies
+

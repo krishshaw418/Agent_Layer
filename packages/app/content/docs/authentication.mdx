@@ -1,0 +1,42 @@
+## Authentication model
+
+Agent Layer uses bearer token authentication. Every request should include an API key tied to the account that will pay for execution.
+
+<CodeBlock
+  language="bash"
+  title="Authorization header"
+  code={String.raw`Authorization: Bearer al_sk_live_...`}
+/>
+
+## Recommended pattern
+
+- Store the API key in a server-side environment variable.
+- Initialize the SDK inside route handlers, server actions, workers, or backend services.
+- Never hardcode production credentials into a browser bundle.
+
+## Server-side initialization
+
+<CodeBlock
+  language="typescript"
+  title="lib/agent-layer.ts"
+  code={String.raw`import { AgentLayerClient } from "agent-layer-sdk";
+
+export function createAgentLayerClient() {
+  const apiKey = process.env.AGENT_LAYER_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Missing AGENT_LAYER_API_KEY");
+  }
+
+  return new AgentLayerClient(apiKey);
+}`}
+/>
+
+## Browser playgrounds
+
+The built-in playground in this app stores your key in local storage for convenience. That is acceptable for local developer tooling, but it is not the model you should copy into a public production app.
+
+<Callout>
+  If you need client-side interactivity, proxy requests through your own backend and keep the real key on the server.
+</Callout>
+

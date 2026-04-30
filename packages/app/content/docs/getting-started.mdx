@@ -1,0 +1,63 @@
+## Installation
+
+Install the SDK and initialize a client with an Agent Layer API key.
+
+<ExampleTabs
+  curl={String.raw`npm install agent-layer-sdk`}
+  javascript={String.raw`const { AgentLayerClient } = require("agent-layer-sdk");
+
+const client = new AgentLayerClient(process.env.AGENT_LAYER_API_KEY);`}
+  typescript={String.raw`import { AgentLayerClient } from "agent-layer-sdk";
+
+const client = new AgentLayerClient(process.env.AGENT_LAYER_API_KEY!);`}
+/>
+
+## First chat request
+
+<ExampleTabs
+  curl={String.raw`curl https://api.agentlayer.ai/chat/send \
+  -H "Authorization: Bearer $AGENT_LAYER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [{ "role": "user", "content": "Hello from Agent Layer" }],
+    "stream": false,
+    "strategy": "latency"
+  }'`}
+  javascript={String.raw`const text = await client.chat.completions.create({
+  messages: [{ role: "user", content: "Hello from Agent Layer" }],
+  stream: false,
+  strategy: "latency"
+});
+
+console.log(text);`}
+  typescript={String.raw`const text = await client.chat.completions.create({
+  messages: [{ role: "user", content: "Hello from Agent Layer" }],
+  stream: false,
+  strategy: "latency"
+});
+
+console.log(text);`}
+/>
+
+## Streaming
+
+When you set `stream: true`, the chat resource returns an async iterable of chunks.
+
+<CodeBlock
+  language="typescript"
+  title="stream.ts"
+  code={String.raw`const stream = await client.chat.completions.create({
+  messages: [{ role: "user", content: "Summarize decentralized AI routing." }],
+  stream: true,
+  strategy: "cost"
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices?.[0]?.delta?.content ?? "");
+}`}
+/>
+
+<Callout>
+  Keep API keys on the server when you move from local testing to production apps.
+</Callout>
+

@@ -1,0 +1,36 @@
+## Balance lookups
+
+The account resource currently exposes a balance lookup for operational visibility.
+
+<ExampleTabs
+  curl={String.raw`curl https://api.agentlayer.ai/account/balance \
+  -H "Authorization: Bearer $AGENT_LAYER_API_KEY"`}
+  javascript={String.raw`const balance = await client.account.balance();
+
+console.log(balance.formatted);`}
+  typescript={String.raw`const balance = await client.account.balance();
+
+console.log(balance.formatted);`}
+/>
+
+## Response shape
+
+<CodeBlock
+  language="json"
+  title="balance.json"
+  code={String.raw`{
+  "raw": "1500000000000000000",
+  "formatted": "1.5"
+}`}
+/>
+
+## Suggested usage
+
+- Show available funds in your internal dashboard.
+- Warn users before expensive batch operations.
+- Reconcile expected spend against on-chain or vault-side accounting.
+
+<Callout>
+  If your UX relies on balance checks before request submission, still handle insufficient-funds errors at execution time. A balance can change between the preflight check and the actual request.
+</Callout>
+

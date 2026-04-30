@@ -1,0 +1,45 @@
+## Build on a network, not a single inference box
+
+Agent Layer is a decentralized AI infrastructure that accepts application requests, distributes jobs to nodes, and returns results through a unified SDK surface.
+
+- Applications send chat, embeddings, and account-related operations.
+- The network routes each job according to availability and strategy.
+- Nodes execute work and stream results back to the caller.
+- Vault + Escrow handle token-native payment settlement.
+
+<Callout>
+  If you want the fastest path to something working, start with the Getting Started guide and then open the Playground.
+</Callout>
+
+## Mental model
+
+Think about Agent Layer as three layers:
+
+1. A developer API layer that looks familiar.
+2. A routing layer that decides where work should run.
+3. A settlement layer that accounts for compute usage with tokens.
+
+## Why teams use it
+
+- Reduce dependence on a single inference provider.
+- Match request routing to product goals such as lower cost or lower latency.
+- Stream responses back in real time for chat experiences.
+- Build wallet-aware billing flows into the same platform.
+
+## Base client
+
+<CodeBlock
+  language="typescript"
+  title="client.ts"
+  code={String.raw`import { AgentLayerClient } from "agent-layer-sdk";
+
+const client = new AgentLayerClient(process.env.AGENT_LAYER_API_KEY!);
+`}
+/>
+
+## What to read next
+
+- Go to **Getting Started** if you want installation and first request flow.
+- Go to **SDK Overview** if you want the resource map first.
+- Go to **Chat API** if your product starts with generation.
+

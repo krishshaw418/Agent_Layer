@@ -1,0 +1,57 @@
+## Client shape
+
+The current TypeScript SDK exposes four main resources from a single client instance:
+
+- `chat`
+- `embeddings`
+- `account`
+- `token`
+
+<CodeBlock
+  language="typescript"
+  title="sdk-overview.ts"
+  code={String.raw`const client = new AgentLayerClient(apiKey);
+
+client.chat.completions.create(...);
+client.embeddings.create(...);
+client.account.balance();
+client.token.estimate(...);`}
+/>
+
+## Resource map
+
+### `chat`
+
+Send completion jobs, optionally stream deltas back over WebSocket, and use strategy hints such as `latency` or `cost`.
+
+### `embeddings`
+
+Generate vectors for one string or a list of strings.
+
+### `account`
+
+Read account balance information to power dashboards, usage alerts, and operational tooling.
+
+### `token`
+
+Estimate prompt and completion usage before execution.
+
+## Example composition
+
+<CodeBlock
+  language="typescript"
+  title="workflow.ts"
+  code={String.raw`const estimate = client.token.estimate({
+  messages: [{ role: "user", content: prompt }],
+  max_tokens: 512
+});
+
+const result = await client.chat.completions.create({
+  messages: [{ role: "user", content: prompt }],
+  stream: false,
+  strategy: "cost"
+});
+
+console.log({ estimate, result });`}
+/>
+

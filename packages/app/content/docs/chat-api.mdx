@@ -1,0 +1,79 @@
+## Create a chat completion
+
+The chat resource creates a job on Agent Layer and then either collects the full result or returns a stream of incremental chunks.
+
+<ExampleTabs
+  curl={String.raw`curl https://api.agentlayer.ai/chat/send \
+  -H "Authorization: Bearer $AGENT_LAYER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      { "role": "user", "content": "Describe the Agent Layer routing flow." }
+    ],
+    "stream": true,
+    "strategy": "latency"
+  }'`}
+  javascript={String.raw`const stream = await client.chat.completions.create({
+  messages: [
+    { role: "user", content: "Describe the Agent Layer routing flow." }
+  ],
+  stream: true,
+  strategy: "latency"
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices?.[0]?.delta?.content ?? "");
+}`}
+  typescript={String.raw`const stream = await client.chat.completions.create({
+  messages: [
+    { role: "user", content: "Describe the Agent Layer routing flow." }
+  ],
+  stream: true,
+  strategy: "latency"
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices?.[0]?.delta?.content ?? "");
+}`}
+/>
+
+## Request fields
+
+- `messages`: ordered chat history.
+- `temperature`: optional generation randomness.
+- `max_tokens`: optional completion cap.
+- `stream`: when `true`, receive chunks instead of a final string.
+- `strategy`: `latency` or `cost`.
+- `metadata`: optional request metadata.
+
+## Non-streaming response
+
+<CodeBlock
+  language="typescript"
+  title="non-streaming.ts"
+  code={String.raw`const text = await client.chat.completions.create({
+  messages: [{ role: "user", content: "Give me a concise summary." }],
+  stream: false,
+  strategy: "cost"
+});
+
+console.log(text);`}
+/>
+
+## Streaming chunk shape
+
+<CodeBlock
+  language="json"
+  title="chunk.json"
+  code={String.raw`{
+  "choices": [
+    {
+      "delta": {
+        "content": "Agent Layer routes your request..."
+      }
+    }
+  ],
+  "done": false
+}`}
+/>
+

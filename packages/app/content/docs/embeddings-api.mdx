@@ -1,0 +1,58 @@
+## Create embeddings
+
+Use the embeddings resource when you need vector representations for search, retrieval, ranking, or clustering.
+
+<ExampleTabs
+  curl={String.raw`curl https://api.agentlayer.ai/embeddings \
+  -H "Authorization: Bearer $AGENT_LAYER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agent-embed-1",
+    "input": "Decentralized AI infrastructure"
+  }'`}
+  javascript={String.raw`const embedding = await client.embeddings.create({
+  model: "agent-embed-1",
+  input: "Decentralized AI infrastructure"
+});
+
+console.log(embedding.data[0].embedding.length);`}
+  typescript={String.raw`const embedding = await client.embeddings.create({
+  model: "agent-embed-1",
+  input: "Decentralized AI infrastructure"
+});
+
+console.log(embedding.data[0].embedding.length);`}
+/>
+
+## Request fields
+
+- `model`: embedding model identifier.
+- `input`: one string or an array of strings.
+
+## Example response
+
+<CodeBlock
+  language="json"
+  title="embedding-response.json"
+  code={String.raw`{
+  "object": "list",
+  "data": [
+    {
+      "index": 0,
+      "embedding": [0.0142, -0.0083, 0.1021]
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 6,
+    "total_tokens": 6
+  }
+}`}
+/>
+
+## Common use cases
+
+- Semantic search indexes
+- Retrieval-augmented generation pipelines
+- Intent clustering
+- Re-ranking systems
+
