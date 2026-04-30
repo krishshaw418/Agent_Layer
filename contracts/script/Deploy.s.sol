@@ -10,7 +10,7 @@ import {EntryPoint} from "../src/EntryPoint.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {AgentLayerToken} from "../src/Token.sol";
 import {Vault} from "../src/Vault.sol";
-
+import {AGLGateway} from "../src/TokenGateway.sol";
 
 contract Deploy is Script {
     function run() external {
@@ -24,6 +24,15 @@ contract Deploy is Script {
         uint256 initialSupply = 1_000_000;
         AgentLayerToken token = new AgentLayerToken(initialSupply);
         console.log("Token deployed at:", address(token));
+
+        // Deploy AGLGateway contract
+        address usdcAddress = vm.envAddress("USDC_ADDRESS");
+        AGLGateway gateway = new AGLGateway(usdcAddress, address(token), 500_000, deployer);
+        console.log("AGLGateway deployed at:", address(gateway));
+
+        // Set gateway address on token contract
+        token.setGateway(address(gateway));
+        console.log("Gateway address set on token contract");
 
         // Deploy vault contract
         Vault vault = new Vault(IERC20(address(token)), deployer);

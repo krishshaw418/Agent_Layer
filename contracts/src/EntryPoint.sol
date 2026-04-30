@@ -83,12 +83,13 @@ contract EntryPoint {
     uint256 public constant MAX_REPUTATION = 100;
     uint256 public constant INITIAL_REPUTATION = 10;
 
-    event JobCreated(string jobId, address creator, uint256 maxTokenAmount, uint256 deadline);
-    event JobAssigned(string jobId, address node);
+    event JobCreated(string  jobId, address  creator, uint256 maxTokenAmount, uint256 deadline);
+    event JobAssigned(string  jobId, address  node);
+    event JobFailed(string  jobId);
     event BidPlaced(string bidId, string jobId, address bidder, uint256 tokenAmount);
     event EscrowCreated(string jobId, string bidId, address payer, address payee, uint256 amount);
-    event EscrowReleased(string jobId, uint256 amount);
-    event EscrowRefund(string jobId);
+    event EscrowReleased(string  jobId, uint256 amount);
+    event EscrowRefund(string  jobId);
 
     constructor(address _escrowAddress, address _coordinator, address _token, address _vaultAddress) {
         escrow = IEscrow(_escrowAddress);
@@ -177,6 +178,7 @@ contract EntryPoint {
         // No bids placed mark as failed and refund
         if (jobs[jobKey].bidCount == 0) {
             jobs[jobKey].status = JobStatus.FAILED;
+            emit JobFailed(_jobId);
             refundEscrow(_jobId);
             emit EscrowRefund(_jobId);
             return;
