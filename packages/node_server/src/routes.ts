@@ -1,9 +1,7 @@
 import type { Request, Response } from "express";
 import Router from "express";
 import { jobIdSchema } from "./schema";
-import pubClient from "./pubClient";
-import { config } from "./config";
-import { db } from "./db";
+import jobQueue from "./queue";
 
 const router = Router();
 
@@ -18,22 +16,29 @@ router.post("/new-job", async (req: Request, res: Response) => {
   }
 
   try {
-    const jobs = db.collection('job');
 
-    // Fetch the job using job_id
-    const job = await jobs.findOne({ id: parsed.data.job_id });
+    // Prevent duplicate job enqueue
+    const existing = await jobQueue.getJob(parsed.data.job_id);
 
-    // Publish to jobs channel for nodes to bid
-    const listeners = await pubClient.publish(config.channel_name, JSON.stringify(job));
-    console.log("Number of listeners: ", listeners);
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        message: "Job already queued",
+      });
+    }
 
+    // Push to job queue
+    await jobQueue.add(`new_job`, parsed.data , {
+      jobId: parsed.data.job_id,
+      removeOnComplete: true,
+      removeOnFail: true,
+    });
+    
     // Return acknowledgement to the indexer
     return res.status(200).json({ success: true, message: "Job published!" });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Something went wrong!" });
+    return res.status(500).json({ success: false, message: "Something went wrong!" });
   }
 });
 

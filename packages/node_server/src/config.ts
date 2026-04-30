@@ -5,8 +5,10 @@ const parsedEnv = envSchema.parse(process.env);
 
 export const config = {
     port: parsedEnv.PORT,
-    redis_host: parsedEnv.REDIS_HOST,
-    redis_port: parsedEnv.REDIS_PORT,
+    redis_host: parsedEnv.IO_REDIS_HOST,
+    redis_port: parsedEnv.IO_REDIS_PORT,
+    redis_username: parsedEnv.IO_REDIS_USERNAME,
+    redis_password: parsedEnv.IO_REDIS_PASSWORD,
     auth_secret: parsedEnv.WEBHOOK_SECRET,
     channel_name: parsedEnv.CHANNEL_NAME,
     db_uri: parsedEnv.DB_URI,
