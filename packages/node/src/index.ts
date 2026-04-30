@@ -21,4 +21,5 @@ export type {
 export { loadJob }            from "../utils/job.js";
 export { checkCapabilities }  from "../utils/capability.js";
 export { checkModel }         from "../utils/ollama.js";
-export { OLLAMA_HOST }        from "../utils/ollama.js";
+export { OLLAMA_HOST } from "../utils/ollama.js";
+export { buildPromptFromJob, estimateInputTokensFromJob } from "../utils/job.js";
