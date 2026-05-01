@@ -49,23 +49,23 @@ export function CreateApiKeyModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 shadow-xl">
+      <div className="relative w-full max-w-md border-[3px] border-black bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] rounded-none">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-          <h2 className="text-lg font-semibold text-white">Create New API Key</h2>
+        <div className="flex items-center justify-between border-b-[3px] border-black px-6 py-5">
+          <h2 className="text-xl font-black uppercase text-black tracking-tight">Create New API Key</h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-slate-400 transition hover:text-white disabled:opacity-50"
+            className="text-black transition hover:bg-gray-200 disabled:opacity-50 border-[2px] border-transparent hover:border-black p-1"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-4">
-          <div className="space-y-2">
-            <label htmlFor="keyName" className="block text-sm font-medium text-slate-300">
+        <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6">
+          <div className="space-y-3">
+            <label htmlFor="keyName" className="block text-sm font-black uppercase tracking-widest text-black">
               API Key Name
             </label>
             <Input
@@ -75,29 +75,29 @@ export function CreateApiKeyModal({
               value={keyName}
               onChange={(e) => setKeyName(e.target.value)}
               disabled={isSubmitting}
-              className="border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500"
+              className="border-[3px] border-black bg-white text-black font-bold rounded-none focus-visible:ring-0 focus-visible:border-[#7a00ff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-6 px-4 placeholder:text-gray-400"
               autoFocus
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-[11px] font-bold text-gray-600 uppercase">
               Give your API key a descriptive name to remember its purpose
             </p>
           </div>
 
           {/* Footer */}
-          <div className="flex gap-3 border-t border-white/10 pt-4">
+          <div className="flex gap-4 pt-2">
             <Button
               type="button"
               variant="ghost"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1"
+              className="flex-1 border-[3px] border-black text-black hover:bg-gray-100 rounded-none font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={!keyName.trim() || isSubmitting}
-              className="flex-1 shadow-[0_12px_36px_rgba(34,211,238,0.22)]"
+              className="flex-1 bg-[#7a00ff] text-white hover:bg-[#6000d6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all rounded-none font-black uppercase"
             >
               {isSubmitting ? "Creating..." : "Create Key"}
             </Button>

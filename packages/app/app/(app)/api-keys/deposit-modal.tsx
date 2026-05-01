@@ -101,23 +101,23 @@ export function DepositModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 shadow-xl">
+      <div className="relative w-full max-w-md border-[3px] border-black bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] rounded-none">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-          <h2 className="text-lg font-semibold text-white">Recharge Vault</h2>
+        <div className="flex items-center justify-between border-b-[3px] border-black px-6 py-5">
+          <h2 className="text-xl font-black uppercase text-black tracking-tight">Recharge Vault</h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-slate-400 transition hover:text-white disabled:opacity-50"
+            className="text-black transition hover:bg-gray-200 disabled:opacity-50 border-[2px] border-transparent hover:border-black p-1"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-4">
-          <div className="space-y-2">
-            <label htmlFor="amount" className="block text-sm font-medium text-slate-300">
+        <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6">
+          <div className="space-y-3">
+            <label htmlFor="amount" className="block text-sm font-black uppercase tracking-widest text-black">
               Deposit Amount (AGT)
             </label>
             <Input
@@ -129,17 +129,17 @@ export function DepositModal({
               disabled={isSubmitting}
               min="0"
               step="0.0001"
-              className="border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500"
+              className="border-[3px] border-black bg-white text-black font-bold rounded-none focus-visible:ring-0 focus-visible:border-[#7a00ff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-6 px-4 placeholder:text-gray-400"
               autoFocus
             />
-            <p className="text-xs text-slate-500">Enter the amount of Agent Layer Token (AGT) you want to deposit into your vault</p>
+            <p className="text-[11px] font-bold text-gray-600 uppercase">Enter the amount of Agent Layer Token (AGT) you want to deposit into your vault</p>
 
-            <div className="mt-2 text-sm text-slate-300">
-              <span className="text-slate-400">AGT Balance: </span>
+            <div className="mt-2 text-sm font-bold text-gray-700 uppercase tracking-wider">
+              <span className="text-black">AGT Balance: </span>
               {isCheckingBalance ? (
                 <span className="ml-2">Checking...</span>
               ) : tokenBalance !== null ? (
-                <span className="ml-2">{parseFloat(tokenBalance).toFixed(4)} AGT</span>
+                <span className="ml-2 text-[#7a00ff]">{parseFloat(tokenBalance).toFixed(4)} AGT</span>
               ) : (
                 <span className="ml-2">—</span>
               )}
@@ -147,8 +147,8 @@ export function DepositModal({
           </div>
 
           {/* Footer */}
-          <div className="flex gap-3 border-t border-white/10 pt-4">
-            <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting} className="flex-1">
+          <div className="flex gap-4 pt-2">
+            <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting} className="flex-1 border-[3px] border-black text-black hover:bg-gray-100 rounded-none font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all">
               Cancel
             </Button>
 
@@ -157,16 +157,16 @@ export function DepositModal({
                 <Button
                   type="button"
                   onClick={() => router.push("/purchase-token")}
-                  className="flex-1 bg-amber-500 text-white"
+                  className="flex-1 bg-black text-white hover:bg-gray-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all rounded-none font-black uppercase"
                 >
-                  Purchase Agent Layer Token
+                  Purchase Token
                 </Button>
               </div>
             ) : (
               <Button
                 type="submit"
                 disabled={!amount.trim() || parseFloat(amount) <= 0 || isSubmitting}
-                className="flex-1 shadow-[0_12px_36px_rgba(34,211,238,0.22)]"
+                className="flex-1 bg-[#7a00ff] text-white hover:bg-[#6000d6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all rounded-none font-black uppercase"
               >
                 {isSubmitting ? (
                   <>

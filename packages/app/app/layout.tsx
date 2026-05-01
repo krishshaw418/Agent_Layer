@@ -35,7 +35,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body
         className={`${sans.variable} ${display.variable} ${mono.variable} font-sans antialiased`}
       >

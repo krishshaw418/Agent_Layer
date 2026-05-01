@@ -1,11 +1,12 @@
 {
-  "name": "agent-layer-sdk",
+  "name": "@agent_layer/sdk",
   "version": "1.0.0",
-  "description": "This is the SDK for AgentLayer that users will integrate on their app",
+  "description": "The SDK for AgentLayer",
   "license": "ISC",
-  "author": "",
+  "author": "AgentLayer",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "index.ts",
+  "types": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

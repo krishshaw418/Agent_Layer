@@ -26,22 +26,22 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+    <div className="flex h-full flex-col bg-white">
+      <div className="flex items-center justify-between border-b-[3px] border-black px-4 py-4">
         <Link href="/" className="flex min-w-0 items-center gap-3" onClick={onNavigate}>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 text-cyan-300">
-            <span className="font-semibold">AL</span>
+          <div className="flex h-11 w-11 items-center justify-center bg-[#7a00ff] border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span className="font-black text-white">AL</span>
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate font-semibold text-white">{siteConfig.name}</p>
-              <p className="truncate text-xs text-slate-500">{siteConfig.description}</p>
+              <p className="truncate font-black text-black uppercase tracking-tight">{siteConfig.name}</p>
+              <p className="truncate text-[10px] font-bold text-gray-500 uppercase">{siteConfig.description}</p>
             </div>
           )}
         </Link>
         {!mobile && (
-          <Button variant="ghost" size="icon" onClick={onToggle}>
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          <Button variant="ghost" size="icon" onClick={onToggle} className="text-black border-[2px] border-transparent hover:border-black hover:bg-gray-100 rounded-none shadow-none">
+            {collapsed ? <ChevronRight className="h-5 w-5 font-black" /> : <ChevronLeft className="h-5 w-5 font-black" />}
           </Button>
         )}
       </div>
@@ -61,13 +61,13 @@ export function Sidebar({
                 href={item.href}
                 onClick={onNavigate}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+                  "group flex items-center gap-3 px-3 py-2.5 text-sm transition font-black uppercase tracking-wider border-[2px] rounded-none mb-1",
                   active
-                    ? "bg-cyan-400/12 text-cyan-200"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
+                    ? "bg-[#7a00ff] text-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
+                    : "text-gray-700 border-transparent hover:border-black hover:bg-gray-100"
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className="h-5 w-5 shrink-0" />
                 {!collapsed && <span>{item.title}</span>}
               </Link>
             );
@@ -87,10 +87,10 @@ export function Sidebar({
                 href={href}
                 onClick={onNavigate}
                 className={cn(
-                  "block rounded-xl px-3 py-2 text-sm transition",
+                  "block px-3 py-2 text-sm transition font-black uppercase tracking-wider border-[2px] rounded-none mb-1",
                   active
-                    ? "bg-white/8 text-white"
-                    : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                    ? "bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(122,0,255,1)] translate-x-[-2px] translate-y-[-2px]"
+                    : "text-gray-600 border-transparent hover:border-black hover:bg-gray-100"
                 )}
               >
                 {!collapsed ? item.title : item.title.slice(0, 1)}
@@ -99,17 +99,17 @@ export function Sidebar({
           })}
         </div>
       </div>
-      <div className="border-t border-white/10 p-4">
-        <div className="rounded-2xl border border-emerald-400/10 bg-emerald-400/10 p-4">
+      <div className="border-t-[3px] border-black p-4">
+        <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           {!collapsed ? (
             <>
-              <p className="text-sm font-medium text-emerald-200">Node market</p>
-              <p className="mt-1 text-xs leading-5 text-emerald-100/70">
+              <p className="text-sm font-black text-[#7a00ff] uppercase tracking-widest">Node market</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-gray-700 uppercase">
                 Providers earn for compute, developers route by strategy, and the network stays composable.
               </p>
             </>
           ) : (
-            <p className="text-center text-xs font-medium text-emerald-200">N</p>
+            <p className="text-center text-xs font-black text-[#7a00ff]">N</p>
           )}
         </div>
       </div>
@@ -127,7 +127,7 @@ function Label({
   return (
     <p
       className={cn(
-        "px-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500",
+        "px-3 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#7a00ff]",
         collapsed && "text-center"
       )}
     >

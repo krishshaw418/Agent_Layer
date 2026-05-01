@@ -1,65 +1,67 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getAddress } from "ethers";
 import { SiweMessage } from "siwe";
 import { toast } from "sonner";
-import { Wallet } from "lucide-react";
+import { Wallet, LogOut } from "lucide-react";
 import { useAccount, useConnect, useDisconnect, useSignMessage } from "wagmi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 
 type ButtonState = "idle" | "connecting" | "authenticating";
 
-export function WalletAuthButton() {
+export function WalletAuthButton({ className, mode = "hero" }: { className?: string, mode?: "hero" | "navbar" }) {
   const router = useRouter();
   const { address, isConnected } = useAccount();
   const { connectAsync, connectors } = useConnect();
   const { disconnectAsync } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
+  const queryClient = useQueryClient();
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [state, setState] = useState<ButtonState>("idle");
-
-  const isBusy = state !== "idle";
-
-  const buttonLabel = useMemo(() => {
-    if (state === "connecting") return "Connecting Wallet...";
-    if (state === "authenticating") return "Authenticating...";
-    if (isAuthenticated) return "Manage API Keys";
-    return "Connect Wallet";
-  }, [isAuthenticated, state]);
-
-  useEffect(() => {
-    if (!isConnected || !address) {
-      setIsAuthenticated(false);
-      return;
-    }
-
-    const checkSession = async () => {
+  const { data: isAuthenticated } = useQuery({
+    queryKey: ["auth-session", address],
+    queryFn: async () => {
+      if (!isConnected || !address) return false;
       try {
         const res = await fetch("/api/auth/me", {
           method: "GET",
           credentials: "include"
         });
+        if (!res.ok) return false;
         const data = await res.json();
         const sessionAddress = data?.user?.address as string | undefined;
-        setIsAuthenticated(Boolean(sessionAddress && sessionAddress.toLowerCase() === address.toLowerCase()));
+        return Boolean(sessionAddress && sessionAddress.toLowerCase() === address.toLowerCase());
       } catch {
-        setIsAuthenticated(false);
+        return false;
       }
-    };
+    },
+    enabled: isConnected && !!address,
+    initialData: false,
+  });
 
-    void checkSession();
-  }, [address, isConnected]);
+  const [state, setState] = useState<ButtonState>("idle");
 
-  // Automatically disconnect wallet if connected but not authenticated (skip during auth process)
-  useEffect(() => {
-    if (isConnected && !isAuthenticated && state === "idle") {
-      void disconnectAsync();
+  const isBusy = state !== "idle";
+
+  const buttonLabel = useMemo(() => {
+    if (state === "connecting") return "Connecting...";
+    if (state === "authenticating") return "Authenticating...";
+    
+    if (mode === "navbar") {
+      if (isAuthenticated && address) return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+      return "Connect Wallet";
+    } else {
+      if (isAuthenticated) return "Get API key";
+      return "Connect Wallet";
     }
-  }, [isConnected, isAuthenticated, state, disconnectAsync]);
+  }, [isAuthenticated, state, mode, address]);
+
+  // Removed local checkSession useEffect. Handled by React Query.
+
+  // Removed auto-disconnect to support multiple wallet buttons (Navbar + Hero)
 
   const authenticateWallet = async (walletAddress: string) => {
     const normalizedAddress = walletAddress.toLowerCase();
@@ -114,7 +116,7 @@ export function WalletAuthButton() {
         throw new Error("Signature verification failed");
       }
 
-      setIsAuthenticated(true);
+      await queryClient.invalidateQueries({ queryKey: ["auth-session", address] });
       toast.success("Wallet connected successfully");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
@@ -124,6 +126,12 @@ export function WalletAuthButton() {
 
   const generateApiKey = async (walletAddress: string) => {
     router.push("/api-keys");
+  };
+
+  const handleDisconnect = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await disconnectAsync();
+    await queryClient.invalidateQueries({ queryKey: ["auth-session", address] });
   };
 
   const handleClick = async () => {
@@ -154,7 +162,7 @@ export function WalletAuthButton() {
 
       if (!isAuthenticated) {
         await authenticateWallet(walletAddress);
-      } else {
+      } else if (mode === "hero") {
         await generateApiKey(walletAddress);
       }
     } catch (error) {
@@ -165,10 +173,25 @@ export function WalletAuthButton() {
     }
   };
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
+  if (!isMounted) {
+    return (
+      <Button size="lg" className={`${className} opacity-0`}>
+        Loading...
+      </Button>
+    );
+  }
+
   return (
-    <Button size="lg" className="shadow-[0_14px_40px_rgba(34,211,238,0.24)]" onClick={handleClick} disabled={isBusy}>
+    <Button size="lg" className={className} onClick={mode === "navbar" && isAuthenticated ? undefined : handleClick} disabled={isBusy}>
       {buttonLabel}
-      <Wallet className="ml-2 h-4 w-4" />
+      {mode === "navbar" && isAuthenticated ? (
+        <LogOut className="ml-2 h-4 w-4 cursor-pointer hover:text-red-500" onClick={handleDisconnect} />
+      ) : (
+        <Wallet className="ml-2 h-4 w-4" />
+      )}
     </Button>
   );
 }

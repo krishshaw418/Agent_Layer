@@ -180,99 +180,101 @@ export default function PurchaseTokenPage() {
   const isDisabled = !aglAmount.trim() || parseFloat(aglAmount) <= 0 || isProcessing || isLoadingRate;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <div className="flex items-start justify-between gap-4 mb-8">
+    <div className="min-h-screen bg-transparent">
+      <div className="mx-auto max-w-3xl px-4 py-12">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-3xl font-semibold text-white">Purchase Agent Layer Token</h1>
-            <p className="text-slate-400 mt-2">Swap USDC for Agent Layer Token (AGT) on Base.</p>
+            <h1 className="text-5xl font-black uppercase text-black tracking-tight leading-none">Purchase Tokens</h1>
+            <p className="text-lg font-bold text-gray-700 mt-4 max-w-md">Swap USDC for Agent Layer Token (AGT) on Base.</p>
           </div>
 
           {/* Balances Display */}
-          <div className="flex flex-col gap-2 min-w-fit">
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-              <p className="text-xs text-slate-400">AGT Balance</p>
-              <p className="text-sm font-medium text-white">
+          <div className="flex flex-col gap-3 min-w-fit">
+            <div className="border-[3px] border-black bg-white px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <p className="text-[11px] font-black uppercase tracking-widest text-black">AGT Balance</p>
+              <p className="text-lg font-black text-[#7a00ff] mt-1">
                 {isLoadingBalances ? "..." : aglBalance ? parseFloat(aglBalance).toFixed(2) : "—"} AGT
               </p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-              <p className="text-xs text-slate-400">USDC Balance</p>
-              <p className="text-sm font-medium text-white">
+            <div className="border-[3px] border-black bg-white px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <p className="text-[11px] font-black uppercase tracking-widest text-black">USDC Balance</p>
+              <p className="text-lg font-black text-black mt-1">
                 {isLoadingBalances ? "..." : usdcBalance ? parseFloat(usdcBalance).toFixed(2) : "—"} USDC
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-8 space-y-6">
           {/* Exchange Rate Info */}
-          {rate && (
-            <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-3 text-sm text-cyan-200">
-              <p>
-                1 USDC = {ethers.formatUnits(rate, 6)} AGT
-              </p>
-            </div>
-          )}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {rate && (
+              <div className="flex-1 border-[3px] border-black bg-[#7a00ff] p-4 text-sm font-black uppercase tracking-widest text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <p>
+                  1 USDC = {ethers.formatUnits(rate, 6)} AGT
+                </p>
+              </div>
+            )}
 
-          {/* AGL to Output Tokens Info */}
-          <div className="rounded-xl border border-blue-400/20 bg-blue-400/10 p-3 text-sm text-blue-200">
-            <p>1 AGT = 1,000,000 output tokens</p>
+            {/* AGL to Output Tokens Info */}
+            <div className="flex-1 border-[3px] border-black bg-white p-4 text-sm font-black uppercase tracking-widest text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+              <p>1 AGT = 1,000,000 outputs</p>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-            <label className="text-xs text-slate-400">You pay (USDC)</label>
-            <div className="mt-2 flex gap-2">
+          <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <label className="text-sm font-black uppercase tracking-widest text-black">You pay (USDC)</label>
+            <div className="mt-3 flex gap-3">
               <Input
                 value={usdcAmount}
                 onChange={(e) => handleUsdcChange(e.target.value)}
                 placeholder="0.0"
                 type="number"
                 disabled={isLoadingRate}
-                className="flex-1 border-white/10 bg-white/[0.04] text-white"
+                className="flex-1 border-[3px] border-black bg-white text-black font-bold rounded-none focus-visible:ring-0 focus-visible:border-[#7a00ff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-6 px-4 placeholder:text-gray-400"
               />
-              <div className="flex items-center gap-2 rounded-md bg-slate-800 px-3 py-2">
-                <DollarSign className="h-4 w-4 text-slate-200" />
-                <span className="text-sm text-slate-200">USDC</span>
+              <div className="flex items-center gap-2 rounded-none border-[3px] border-black bg-black px-5 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <DollarSign className="h-4 w-4 text-white" />
+                <span className="text-sm font-black uppercase text-white">USDC</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center py-2">
             {isLoadingRate ? (
-              <Loader className="h-5 w-5 text-slate-400 animate-spin" />
+              <Loader className="h-8 w-8 text-[#7a00ff] animate-spin" />
             ) : (
-              <Repeat className="h-5 w-5 text-slate-400" />
+              <Repeat className="h-8 w-8 text-black" />
             )}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-            <label className="text-xs text-slate-400">You receive (AGT)</label>
-            <div className="mt-2 flex gap-2">
+          <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <label className="text-sm font-black uppercase tracking-widest text-black">You receive (AGT)</label>
+            <div className="mt-3 flex gap-3">
               <Input
                 value={aglAmount}
                 onChange={(e) => handleAglChange(e.target.value)}
                 placeholder="0.0"
                 type="number"
                 disabled={isLoadingRate}
-                className="flex-1 border-white/10 bg-white/[0.04] text-white"
+                className="flex-1 border-[3px] border-black bg-white text-black font-bold rounded-none focus-visible:ring-0 focus-visible:border-[#7a00ff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-6 px-4 placeholder:text-gray-400"
               />
-              <div className="flex items-center gap-2 rounded-md bg-slate-800 px-3 py-2">
-                <span className="text-sm text-slate-200">AGT</span>
+              <div className="flex items-center gap-2 rounded-none border-[3px] border-black bg-[#7a00ff] px-6 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <span className="text-sm font-black uppercase text-white">AGT</span>
               </div>
             </div>
             {aglAmount.trim() && !isNaN(parseFloat(aglAmount)) && (
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs font-bold text-gray-500 uppercase mt-4">
                 = {(parseFloat(aglAmount) * 1_000_000).toLocaleString()} output tokens
               </p>
             )}
           </div>
 
-          <div className="flex gap-3">
-            <Button onClick={() => router.push("/api-keys")} variant="ghost" className="flex-1">
+          <div className="flex gap-4 pt-4">
+            <Button onClick={() => router.push("/api-keys")} variant="ghost" className="flex-1 border-[3px] border-black text-black hover:bg-gray-100 rounded-none font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all py-6">
               Back
             </Button>
-            <Button onClick={handlePurchase} disabled={isDisabled} className="flex-1">
+            <Button onClick={handlePurchase} disabled={isDisabled} className="flex-1 bg-[#7a00ff] text-white hover:bg-[#6000d6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all rounded-none font-black uppercase py-6">
               {isProcessing ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />
