@@ -1,17 +1,29 @@
-import "dotenv/config";
-import { envSchema } from "./schema";
+import { defaultConfigSchema, manualConfigSchema } from "./schema";
+import defaultConfig from "../default.config.json";
+import manualConfig from  "../manual.config.json";
 
-const parsedEnv = envSchema.parse(process.env);
+const parsedDefault = defaultConfigSchema.parse(defaultConfig);
+const parsedManual = manualConfigSchema.parse(manualConfig);
 
 export const config = {
-    port: parsedEnv.PORT,
-    redis_host: parsedEnv.REDIS_HOST,
-    redis_port: parsedEnv.REDIS_PORT,
-    auth_secret: parsedEnv.WEBHOOK_SECRET,
-    channel_name: parsedEnv.CHANNEL_NAME,
-    db_uri: parsedEnv.DB_URI,
-    rpc_url: parsedEnv.BASE_SEPOLIA_RPC_URL,
-    priv_key: parsedEnv.PRIVATE_KEY,
-    contract_add: parsedEnv.CONTRACT_ADDRESS,
-    node_add: parsedEnv.PUBLIC_ADDRESS
+
+    // Default configs
+    port: parsedDefault.PORT,
+    contract_add: parsedDefault.CONTRACT_ADDRESS,
+    new_jobs_channel: parsedDefault.NEW_JOBS_CHANNEL,
+    job_assign_channel: parsedDefault.JOB_ASSIGN_CHANNEL,
+    ollama_host: parsedDefault.OLLAMA_HOST,
+    ollama_port: parsedDefault.OLLAMA_PORT,
+
+    // Manual configs
+    redis_host: parsedManual.IO_REDIS_HOST,
+    redis_port: parsedManual.IO_REDIS_PORT,
+    redis_username: parsedManual.IO_REDIS_USERNAME,
+    redis_password: parsedManual.IO_REDIS_PASSWORD,
+    rpc_url: parsedManual.BASE_RPC_URL,
+    priv_key: parsedManual.PRIVATE_KEY,
+    public_key: parsedManual.PUBLIC_ADDRESS,
+    node_url: parsedManual.NODE_QUERY_URL,
+    node_api_key: parsedManual.NODE_API_KEY,
+    model: parsedManual.MODEL
 }
