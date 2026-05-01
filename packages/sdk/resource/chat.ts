@@ -34,7 +34,7 @@ export class ChatResource {
 
   private async createJob(request: ChatCompletionRequest): Promise<string> {
     const response = await axios.post(
-      `${this.client.baseUrl}/chat/send`,
+      `${this.client.baseUrl}/chat/`,
       request,
       {
         headers: {

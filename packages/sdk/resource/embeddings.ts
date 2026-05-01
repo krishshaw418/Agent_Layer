@@ -3,7 +3,7 @@ import { AgentLayerClient } from "../core/client";
 
 export interface EmbeddingRequest {
   model?: string;
-  input: string | string[];
+  input: string[];
 }
 
 export interface EmbeddingVector {
