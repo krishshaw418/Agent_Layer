@@ -2,8 +2,15 @@ import { config } from "./config";
 import { jobAssignSchema, jobIdSchema } from "./schema";
 import { newJobsQueue, assignedJobsQueue } from "./queue";
 import { redis } from "./redis";
+import { createServer } from "./server";
 
 async function main() {
+
+    const app = createServer();
+
+    app.listen(config.port, () => {
+        console.log(`Listening on port: ${config.port}`);
+    });
 
     const subscriber = redis.duplicate();
 
