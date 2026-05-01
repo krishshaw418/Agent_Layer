@@ -1,10 +1,11 @@
 import { Worker } from "bullmq";
 import { preflightCommand, buildPromptFromJob } from "node";
 import type { Job, Bid } from "node";
-import { submitBid, submitResult } from "./utils";
+import { submitBid } from "./utils";
 import axios from "axios";
 import { config } from "./config";
 import { redis } from "./redis";
+
 
 const bid_worker = new Worker('new_jobs_queue', async (msg) => {
 
@@ -65,9 +66,10 @@ bid_worker.on('error', (err) => {
 const generate_worker = new Worker('assigned_jobs_queue', async (msg) => {
 
   const job_id = msg.data;
-  
-  try {
-    
+  const pub = redis.duplicate();
+
+  try { 
+    // Fetch job details
     const response = await axios.post<Job>(`${config.node_url}/api/node/job/get-job-details`,
       {
         "jobId": job_id
@@ -87,35 +89,59 @@ const generate_worker = new Worker('assigned_jobs_queue', async (msg) => {
 
     // Build prompt using the prompt builder
     const prompt = buildPromptFromJob(job.task);
-
+    
     // Directly fetch response from ollama running locally
-    const ollamaResponse = await axios.post(`${config.ollama_host}/api/generate`,
-      {
-        model:  config.model,
+    const ollamaResponse = await axios({
+      method: 'POST',
+      url: `${config.ollama_host}/api/generate`,
+      data: {
+        model: config.model,
         prompt,
-        stream: false,
+        stream: true,
         options: {
           num_predict: job.constraints?.max_token ?? 2048,
-        },
+        }
       },
-      {
-        headers: { "Content-Type": "application/json" },
+      responseType: 'stream',
+      timeout: 120000
+    });
+    
+    // Stream chunks → Redis
+    ollamaResponse.data.on("data", async (chunk: Buffer | string) => {
+    const lines = chunk.toString().split("\n").filter(Boolean);
+
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+
+        if (parsed.response) {
+          await pub.publish(`stream:${job_id}`, parsed.response);
+        }
+
+        if (parsed.done) {
+          await pub.publish(`stream:${job_id}`, "__END__");
+        }
+      } catch (err) {
+        console.error("Parse error:", err);
       }
-    );
-
-    const result = ollamaResponse.data;
-    if (!result) {
-      throw new Error(`Ollama generation failed: ${ollamaResponse.status}`);
     }
-
-    // Submit Result
-    await submitResult(result);
-
+    });
+    
+    ollamaResponse.data.on("end", async () => {
+      await pub.publish(`stream:${job_id}`, "__END__");
+    });
+    
+    ollamaResponse.data.on("error", async (err: any) => {
+      console.error("Ollama error:", err);
+      await pub.publish(`stream:${job_id}`, "__END__");
+    });
+  
+      
   } catch (error) {
-    console.error(error);
+    console.error("[generate-worker-error]:", error);
+    await pub.publish(`stream:${job_id}`, "__END__");
     throw error;
   }
-  
 }, {
   connection: redis.duplicate(),
   concurrency: 1

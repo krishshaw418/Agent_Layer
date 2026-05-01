@@ -9,3 +9,7 @@ dist
 
 #bid
 bid.diagnostics.json
+
+#configs
+default.config.json
+manual.config.json

@@ -47,10 +47,3 @@ export const submitBid = async (bid: Bid) => {
         return;
     }
 }
-
-// Function to stream LLM response to the user
-export const submitResult = async (response: Response) => {
-    // logic for response streaming
-    console.log(response);
-    return;
-}
