@@ -47,33 +47,49 @@ export class ChatResource {
   }
 
   private async *streamResponse(jobId: string) {
-    const ws = new WebSocket(
-      `${this.client.baseUrl.replace(/^http/, "ws")}/chat/stream?job_id=${jobId}&api_key=${this.client.apiKey}`,
+    const response = await fetch(
+      `${this.client.baseUrl}/chat/stream?job_id=${jobId}?apiKey=${this.client.apiKey}`
     );
 
-    const queue: any[] = [];
-    let done = false;
-    let error: any = null;
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      queue.push(data);
-
-      if (data.done) done = true;
-      if (data.error) error = data.error;
-    };
-
-    while (!done || queue.length > 0) {
-      if (error) throw new Error(error.message);
-
-      if (queue.length > 0) {
-        yield queue.shift();
-      } else {
-        await new Promise((r) => setTimeout(r, 10));
-      }
+    if (!response.body) {
+      throw new Error("No response body");
     }
 
-    ws.close();
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // split by newline (assuming NLDJSON format)
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        try {
+          const parsed = JSON.parse(line);
+
+          if (parsed.error) {
+            throw new Error(parsed.error.message);
+          }
+
+          yield parsed;
+
+          if (parsed.done) return;
+
+        } catch (err) {
+          console.error("Parse error:", err);
+        }
+      }
+    }
   }
 
   private async collectResponse(jobId: string): Promise<string> {
