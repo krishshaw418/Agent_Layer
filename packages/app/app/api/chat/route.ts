@@ -4,7 +4,9 @@ import { createJobFromRequest } from '@/utils/jobBuilder';
 import { createJobOnChain } from "@/utils/backendOnChainHandlers";
 import { scheduleFinalizeJob } from "@/utils/keeperHub";
 import { hashApiKey } from "@/utils/generateAPIKey";
-import { redisClient } from "@/lib/redis";
+import { getRedisClient } from "@/lib/redis";
+
+const redisClient = await getRedisClient();
 
 export async function POST(request: Request) {
   try {
@@ -33,8 +35,8 @@ export async function POST(request: Request) {
     // Create job from request using the jobBuilder
     const job = await createJobFromRequest(body);
 
-    // job deadline is current time + 30sec from request -> number
-    const jobDeadline = Math.floor(Date.now() / 1000) + 30;
+    // job deadline is current time + 60sec from request -> number
+    const jobDeadline = Math.floor(Date.now() / 1000) + 60;
 
     // Insert job into database
     const savedJob = await db.job.create({
@@ -93,7 +95,7 @@ export async function POST(request: Request) {
     // publish jobId to redis channel "new-jobs-channel"
     const channel = "new-jobs-channel";
 
-    await redisClient.publish(channel, JSON.stringify({ jobId }));
+    await redisClient.publish(channel, JSON.stringify({ job_id: jobId }));
 
     console.log(`Published new job to Redis channel: ${channel}`);
 
