@@ -30,7 +30,7 @@ const bid_worker = new Worker('new_jobs_queue', async (msg) => {
     }
 
     // Deadline check — discard silently if expired
-    const expiresAt = job.created_at * 1000 + (job.constraints?.deadline ?? 0);
+    const expiresAt = job.created_at * 1000;
     if (Date.now() >= expiresAt) {
       console.log(`[worker]: ${msg.id} expired — discarding`);
       return;
@@ -88,7 +88,7 @@ const generate_worker = new Worker('assigned_jobs_queue', async (msg) => {
     }
 
     // Build prompt using the prompt builder
-    const prompt = buildPromptFromJob(job.task);
+    const prompt = buildPromptFromJob(job.plan.task, job.plan);
     
     // Directly fetch response from ollama running locally
     const ollamaResponse = await axios({
@@ -99,7 +99,7 @@ const generate_worker = new Worker('assigned_jobs_queue', async (msg) => {
         prompt,
         stream: true,
         options: {
-          num_predict: job.constraints?.max_token ?? 2048,
+          num_predict: job.max_token_amount
         }
       },
       responseType: 'stream',

@@ -1,4 +1,4 @@
-import IORedis from "ioredis";
+import Redis from "ioredis";
 import { config } from "./config";
 
 // export const redis = new IORedis({
@@ -10,10 +10,12 @@ import { config } from "./config";
 //   maxRetriesPerRequest: null,
 // });
 
-export const redis = new IORedis({
-  host: '127.0.0.1',
-  port: 6379
-});
+export const redis = new Redis(
+  "rediss://default:gQAAAAAAAbGzAAIgcDFiMDU4NTMyOGJmN2Y0OWEzYmEyMDU4YzUwNjUwMTEzNw@touching-lamprey-111027.upstash.io:6379",
+  {
+    maxRetriesPerRequest: null,
+  },
+);
 
 redis.on("connect", () => console.log("[Redis] connected"));
 redis.on("ready", () => console.log("[Redis] ready"));
