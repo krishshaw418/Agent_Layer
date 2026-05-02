@@ -242,9 +242,10 @@ export function renderCapabilityError(
   console.log(bad("  ✘  CAPABILITY MISMATCH") + dim("  │  no bid placed"));
   console.log(line);
   console.log();
-  console.log(`${dim("  Job ID     ")}  ${white(job.job_id)}`);
-  console.log(`${dim("  Task type  ")}  ${white(job.task.type)}`);
-  console.log(`${dim("  Input mime ")}  ${white(job.task.input.mime ?? "(none)")}`);
+  console.log(`${dim("  Task ID    ")}  ${white(job.plan.task.task_id)}`);
+  console.log(`${dim("  Task type  ")}  ${white(job.plan.task.type)}`);
+  console.log(`${dim("  Input type ")}  ${white(job.plan.task.input.type)}`);
+  console.log(`${dim("  Input data ")}  ${white(job.plan.task.input.data.slice(0, 60))}`);
   console.log(`${dim("  Model      ")}  ${white(modelName)}`);
   console.log();
   console.log(`${dim("  Required   ")}  ${bad(capCheck.required.join(", "))}`);
