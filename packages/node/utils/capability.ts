@@ -1,25 +1,21 @@
+import { inferMimeFromUrl } from "./job.js";
 import type {
   CapabilityCheckResult,
-  InputMime,
   JobInput,
   JobTaskType,
   OllamaCapability,
 } from "../types.js";
 
 // MIME types that require vision capability
-const VISION_MIMES = new Set<InputMime>([
+const VISION_MIMES = new Set([
   "image/png",
   "image/jpeg",
   "image/webp",
   "image/gif",
+  "application/pdf",    // Ollama processes PDFs through vision pipeline
 ]);
 
-const PDF_MIMES = new Set<InputMime>([
-  "application/pdf",
-]);
-
-// Required capabilities per task type
-// Base requirements without considering input type.
+// Required Base capability per task type
 const TASK_BASE_REQUIREMENTS: Record<JobTaskType, OllamaCapability[]> = {
   code_generation:  ["completion"],
   summarization:    ["completion"],
@@ -30,26 +26,22 @@ const TASK_BASE_REQUIREMENTS: Record<JobTaskType, OllamaCapability[]> = {
   extraction:       ["completion"],
 };
 
-// Derive required capabilities from task + input
+// Derive required capabilities from tasktype + input
 export function deriveRequiredCapabilities(
   taskType: JobTaskType,
   input: JobInput
 ): OllamaCapability[] {
-  const base = [...(TASK_BASE_REQUIREMENTS[taskType] ?? ["completion"])];
+  const required = [...(TASK_BASE_REQUIREMENTS[taskType] ?? ["completion"])];
 
-  if (!input.mime) return base;
-
-  // Image input → vision required
-  if (VISION_MIMES.has(input.mime as InputMime)) {
-    if (!base.includes("vision")) base.push("vision");
+  // Infer mime from the input data field (URL or raw text)
+  if (input.type === "file_url" || input.type === "image_url") {
+    const mime = inferMimeFromUrl(input.data);
+    if (VISION_MIMES.has(mime)) {
+      if (!required.includes("vision")) required.push("vision");
+    }
   }
 
-  // PDF input → vision required
-  if (PDF_MIMES.has(input.mime as InputMime)) {
-    if (!base.includes("vision")) base.push("vision");
-  }
-
-  return base;
+  return required;
 }
 
 // Main capability check
@@ -58,17 +50,20 @@ export function checkCapabilities(
   input: JobInput,
   modelCapabilities: OllamaCapability[]
 ): CapabilityCheckResult {
-  const required  = deriveRequiredCapabilities(taskType, input);
-  const available = modelCapabilities;
-  const missing   = required.filter((cap) => !available.includes(cap));
+  const required = deriveRequiredCapabilities(taskType, input);
+  const missing  = required.filter((cap) => !modelCapabilities.includes(cap));
 
   if (missing.length === 0) {
-    return { ok: true, required, available, missing };
+    return { ok: true, required, available: modelCapabilities, missing };
   }
 
-  const reason = buildReason(taskType, input, missing);
-
-  return { ok: false, required, available, missing, reason };
+  return {
+    ok:       false,
+    required,
+    available: modelCapabilities,
+    missing,
+    reason:   buildReason(taskType, input, missing),
+  };
 }
 
 // Reason builder
@@ -81,10 +76,12 @@ function buildReason(
   const parts: string[] = [];
 
   if (missing.includes("vision")) {
-    if (input.mime && PDF_MIMES.has(input.mime as InputMime)) {
-      parts.push(`Task "${taskType}" with PDF input requires vision capability (model processes PDF pages as images)`);
-    } else if (input.mime && VISION_MIMES.has(input.mime as InputMime)) {
-      parts.push(`Task "${taskType}" with image input (${input.mime}) requires vision capability`);
+    const mime = input.type !== "text" ? inferMimeFromUrl(input.data) : "unknown";
+
+    if (mime === "application/pdf") {
+      parts.push(`Task "${taskType}" with PDF input requires vision capability`);
+    } else if (mime.startsWith("image/")) {
+      parts.push(`Task "${taskType}" with image input (${mime}) requires vision capability`);
     } else {
       parts.push(`Task "${taskType}" requires vision capability`);
     }

@@ -21,6 +21,8 @@ export interface OllamaGenerateResponse {
   model: string;
   created_at: string;
   response: string;
+  done: boolean;
+  context?: number[];
   total_duration?: number;      // nanoseconds
   load_duration?: number;       // nanoseconds
   prompt_eval_count?: number;
@@ -44,7 +46,6 @@ export interface OllamaModelInfo {
 }
 
 export interface OllamaShowResponse {
-  modelfile?: string;
   parameters?: string;           // e.g. "temperature 0.7\nnum_ctx 2048"
   template?: string;
   license?: string;
@@ -55,8 +56,8 @@ export interface OllamaShowResponse {
     format: string;              // e.g. "gguf"
     family: string;              // e.g. "llama", "gemma3"
     families: string[];
-    parameter_size: string;
-    quantization_level: string;
+    parameter_size: string;      // e.g. "4.3B"
+    quantization_level: string;  // e.g. "Q4_K_M"
   };
   model_info?: OllamaModelInfo;
 }
@@ -201,27 +202,14 @@ export interface BidDiagnostics {
   verdict_reasons: string[];
 }
 
-
-// Job Schema
-export type InputMime =
-  | "application/pdf"
-  | "application/json"
-  | "text/plain"
-  | "image/png"
-  | "image/jpeg"
-  | "image/webp"
-  | "image/gif";
- 
+// Job schema
 export type InputType = "file_url" | "text" | "image_url";
- 
+
 export interface JobInput {
   type: InputType;
-  url?: string;
-  text?: string;
-  mime?: InputMime;
-  size_bytes?: number;
+  data: string;          // URL for file_url/image_url, raw text for text inputs
 }
- 
+
 export type JobTaskType =
   | "code_generation"
   | "summarization"
@@ -230,35 +218,56 @@ export type JobTaskType =
   | "creative_writing"
   | "analysis"
   | "extraction";
- 
+
 export interface JobTask {
+  task_id: string;                        // e.g. "summarization-1777405781274-b909c47e"
   type: JobTaskType;
   input: JobInput;
   expected_output: "text" | "json" | "image";
+  dependencies: string[];                 // task_ids this task depends on
 }
- 
-export interface Job {
-  job_id: string;
-  created_at: number;
+
+export interface JobContext {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface JobPlan {
   task: JobTask;
-  constraints?: {
-    max_token?: number;
-    deadline?: number;
-    priority?: "fast" | "balanced" | "quality";
-    quality?: "low" | "medium" | "high";
-  };
-  requirements?: {
-    min_reputation?: number;
-  };
-  metadata?: {
-    user_address?: string;
+  context: JobContext[];                  // prior conversation turns
+  metadata: {
+    system_prompts: string[];
     [key: string]: unknown;
   };
 }
- 
-// Ollama Capability check
+
+export interface Job {
+  _id?: string;                  // DB-assigned — present after indexer saves to DB
+  created_at: number;            // unix milliseconds
+  plan: JobPlan;
+  max_token_amount: number;      // max output tokens allowed
+  deadline: number;              // unix milliseconds — absolute expiry
+  createdBy: string;             // user identifier
+}
+
+// Convenience accessors
+export function getJobId(job: Job): string {
+  // Prefer DB-assigned _id when fetched via API, fall back to task_id
+  // from raw chain schema (e.g. when loading from job.json directly)
+  return job._id ?? job.plan.task.task_id;
+}
+
+export function isJobExpired(job: Job): boolean {
+  return Date.now() >= job.deadline;
+}
+
+export function jobTimeRemainingMs(job: Job): number {
+  return Math.max(0, job.deadline - Date.now());
+}
+
+// Capability check
 export type OllamaCapability = "completion" | "vision" | "image_generation" | "tools" | string;
- 
+
 export interface CapabilityCheckResult {
   ok: boolean;
   required: OllamaCapability[];
