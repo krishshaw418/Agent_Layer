@@ -128,7 +128,10 @@ const generate_worker = new Worker(
               const parsed = JSON.parse(line);
               if (parsed.response)
                 await pub.publish(`stream:${job_id}`, parsed.response);
-              if (parsed.done) resolve(); // resolve on done, let "end" be a safety net
+              if (parsed.done) {
+                await pub.publish(`stream:${job_id}`, "__END__");
+                resolve(); // resolve on done, let "end" be a safety net
+              }
             } catch (err) {
               console.error("Parse error:", err);
             }
