@@ -23,12 +23,12 @@ export interface OllamaGenerateResponse {
   response: string;
   done: boolean;
   context?: number[];
-  total_duration?: number;      // nanoseconds
-  load_duration?: number;       // nanoseconds
+  total_duration?: number; // nanoseconds
+  load_duration?: number; // nanoseconds
   prompt_eval_count?: number;
   prompt_eval_duration?: number; // nanoseconds
   eval_count?: number;
-  eval_duration?: number;       // nanoseconds
+  eval_duration?: number; // nanoseconds
 }
 
 export interface OllamaModelInfo {
@@ -46,18 +46,18 @@ export interface OllamaModelInfo {
 }
 
 export interface OllamaShowResponse {
-  parameters?: string;           // e.g. "temperature 0.7\nnum_ctx 2048"
+  parameters?: string; // e.g. "temperature 0.7\nnum_ctx 2048"
   template?: string;
   license?: string;
-  capabilities?: string[];       // e.g. ["completion", "vision"]
-  modified_at?: string;          // ISO timestamp
+  capabilities?: string[]; // e.g. ["completion", "vision"]
+  modified_at?: string; // ISO timestamp
   details?: {
     parent_model?: string;
-    format: string;              // e.g. "gguf"
-    family: string;              // e.g. "llama", "gemma3"
+    format: string; // e.g. "gguf"
+    family: string; // e.g. "llama", "gemma3"
     families: string[];
-    parameter_size: string;      // e.g. "4.3B"
-    quantization_level: string;  // e.g. "Q4_K_M"
+    parameter_size: string; // e.g. "4.3B"
+    quantization_level: string; // e.g. "Q4_K_M"
   };
   model_info?: OllamaModelInfo;
 }
@@ -90,7 +90,12 @@ export interface TaskClassification {
 }
 
 // Context fit
-export type ContextGrade = "excellent" | "good" | "tight" | "overflow" | "unknown";
+export type ContextGrade =
+  | "excellent"
+  | "good"
+  | "tight"
+  | "overflow"
+  | "unknown";
 
 export interface ContextFitResult {
   grade: ContextGrade;
@@ -113,7 +118,13 @@ export type WarmupProbeResult =
   | { ok: false; error: string };
 
 export type AccuracyProbeResult =
-  | { ok: true; score: number | null; percent: number | null; confidence: ConfidenceLevel; raw: string }
+  | {
+      ok: true;
+      score: number | null;
+      percent: number | null;
+      confidence: ConfidenceLevel;
+      raw: string;
+    }
   | { ok: false; error: string };
 
 export type ConfidenceLevel = "high" | "medium" | "low" | "unknown";
@@ -162,12 +173,12 @@ export interface PreflightOptions {
 // On-chain Bid schema
 // Fields node_id, reputation, and signature will be handled outside this tool
 export interface Bid {
-  job_id: string;                 // from the job event on-chain
-  placed_at: number;              // unix timestamp (seconds)
-  token: number;                  // total estimated tokens to complete the task
-  time_requires: number;          // estimated time in milliseconds
-  confidence: number;             // 0.0–1.0 float
-  model: string;                  // ollama model name
+  job_id: string; // from the job event on-chain
+  placed_at: number; // unix timestamp (seconds)
+  token: number; // total estimated tokens to complete the task
+  time_requires: number; // estimated time in milliseconds
+  confidence: number; // 0.0–1.0 float
+  model: string; // ollama model name
 }
 
 // For local diagnostic
@@ -207,7 +218,7 @@ export type InputType = "file_url" | "text" | "image_url";
 
 export interface JobInput {
   type: InputType;
-  data: string;          // URL for file_url/image_url, raw text for text inputs
+  data: string; // URL for file_url/image_url, raw text for text inputs
 }
 
 export type JobTaskType =
@@ -220,11 +231,11 @@ export type JobTaskType =
   | "extraction";
 
 export interface JobTask {
-  task_id: string;                        // e.g. "summarization-1777405781274-b909c47e"
+  task_id: string; // e.g. "summarization-1777405781274-b909c47e"
   type: JobTaskType;
   input: JobInput;
   expected_output: "text" | "json" | "image";
-  dependencies: string[];                 // task_ids this task depends on
+  dependencies: string[]; // task_ids this task depends on
 }
 
 export interface JobContext {
@@ -234,7 +245,7 @@ export interface JobContext {
 
 export interface JobPlan {
   task: JobTask;
-  context: JobContext[];                  // prior conversation turns
+  context: JobContext[]; // prior conversation turns
   metadata: {
     system_prompts: string[];
     [key: string]: unknown;
@@ -242,31 +253,43 @@ export interface JobPlan {
 }
 
 export interface Job {
-  _id?: string;                  // DB-assigned — present after indexer saves to DB
-  created_at: number;            // unix milliseconds
+  id: string; // DB-assigned — present after indexer saves to DB
+  created_at: number; // unix milliseconds
   plan: JobPlan;
-  max_token_amount: number;      // max output tokens allowed
-  deadline: number;              // unix milliseconds — absolute expiry
-  createdBy: string;             // user identifier
+  maxTokenAmount: number; // max output tokens allowed
+  deadline: number; // unix milliseconds — absolute expiry
+  createdBy: string; // user identifier
 }
 
 // Convenience accessors
+function deadlineMs(job: Job): number {
+  // unix seconds have 10 digits, unix ms have 13 digits
+  return job.deadline < 1_000_000_000_000
+    ? job.deadline * 1000 // seconds → ms
+    : job.deadline; // already ms
+}
+
 export function getJobId(job: Job): string {
   // Prefer DB-assigned _id when fetched via API, fall back to task_id
   // from raw chain schema (e.g. when loading from job.json directly)
-  return job._id ?? job.plan.task.task_id;
+  return job.id;
 }
 
 export function isJobExpired(job: Job): boolean {
-  return Date.now() >= job.deadline;
+  return Date.now() >= deadlineMs(job);
 }
 
 export function jobTimeRemainingMs(job: Job): number {
-  return Math.max(0, job.deadline - Date.now());
+  return Math.max(0, deadlineMs(job) - Date.now());
 }
 
 // Capability check
-export type OllamaCapability = "completion" | "vision" | "image_generation" | "tools" | string;
+export type OllamaCapability =
+  | "completion"
+  | "vision"
+  | "image_generation"
+  | "tools"
+  | string;
 
 export interface CapabilityCheckResult {
   ok: boolean;

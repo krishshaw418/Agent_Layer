@@ -16,10 +16,7 @@ export const config = {
     ollama_port: parsedDefault.OLLAMA_PORT,
 
     // Manual configs
-    redis_host: parsedManual.IO_REDIS_HOST,
-    redis_port: parsedManual.IO_REDIS_PORT,
-    redis_username: parsedManual.IO_REDIS_USERNAME,
-    redis_password: parsedManual.IO_REDIS_PASSWORD,
+    redis_url: parsedManual.UPSTASH_REDIS_URL,
     rpc_url: parsedManual.BASE_RPC_URL,
     priv_key: parsedManual.PRIVATE_KEY,
     public_key: parsedManual.PUBLIC_ADDRESS,

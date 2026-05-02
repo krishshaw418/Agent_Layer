@@ -1,10 +1,7 @@
 import z from "zod";
 
 export const manualConfigSchema = z.object({
-    IO_REDIS_USERNAME: z.string(),
-    IO_REDIS_HOST: z.string(),
-    IO_REDIS_PORT: z.coerce.number(),
-    IO_REDIS_PASSWORD: z.string(),
+    UPSTASH_REDIS_URL: z.string(),
     NODE_QUERY_URL: z.string(),
     NODE_API_KEY: z.string(),
     BASE_RPC_URL: z.string(),
@@ -27,6 +24,6 @@ export const jobIdSchema = z.object({
 });
 
 export const jobAssignSchema = z.object({
-    job_id: z.string(),
-    node_id: z.hex()
+    jobId: z.string(),
+    nodeId: z.hex()
 })

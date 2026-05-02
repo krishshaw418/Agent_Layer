@@ -18,50 +18,45 @@ async function main() {
     console.error("[Redis Subscriber error]", err),
   );
 
-  // Subscribe to new jobs
-  await subscriber.subscribe(config.new_jobs_channel);
+    // Subscribe to new jobs
+    await subscriber.subscribe(config.new_jobs_channel, config.job_assign_channel);
 
-  subscriber.on("message", async (channel, msg) => {
-    console.log(`Received message on channel ${channel}: ${msg}`);
-    if (channel === config.new_jobs_channel) {
-      console.log(`Processing new job message: ${msg}`);
-      const parsed = jobIdSchema.safeParse(JSON.parse(msg));
+    subscriber.on("message", async (channel, msg) => {
+        if (channel === config.new_jobs_channel) {
+        const parsed = JSON.parse(msg);
+        console.log(`Received message at ${channel}: ${JSON.stringify(parsed)}`)
 
-      if (!parsed.success) {
-        console.error("Invalid job ID received:", msg);
-        return;
-      }
+        const existing = await newJobsQueue.getJob(parsed.job_id);
+        if (existing) return;
 
-      const existing = await newJobsQueue.getJob(parsed.data.job_id);
-      if (existing) return;
+        await newJobsQueue.add("new_job", parsed, {
+            jobId: parsed.job_id,
+            removeOnComplete: true,
+            removeOnFail: true,
+        });
+        }
 
-      await newJobsQueue.add("new_jobs_queue", parsed.data, {
-        jobId: parsed.data.job_id,
-        removeOnComplete: true,
-        removeOnFail: true,
-      });
-    }
+        if (channel === config.job_assign_channel) {
+        const parsed = JSON.parse(msg);
+        console.log(`Received message at ${channel}: ${JSON.stringify(parsed)}`);
 
-    if (channel === config.job_assign_channel) {
-      const parsed = jobAssignSchema.safeParse(JSON.parse(msg));
+        if (parsed.nodeId !== config.public_key) return;
 
-      if (!parsed.success) return;
-      if (parsed.data.node_id !== config.public_key) return;
+        const existing = await assignedJobsQueue.getJob(parsed.jobId);
+          console.log(existing);
+        if (existing) return;
 
-      const existing = await assignedJobsQueue.getJob(parsed.data.job_id);
-      if (existing) return;
+        await assignedJobsQueue.add("new_assigned_job", parsed.jobId, {
+            jobId: parsed.jobId,
+            removeOnComplete: true,
+            removeOnFail: true,
+        });
+        }
+    });
 
-      await assignedJobsQueue.add("new_assigned_job", parsed.data.job_id, {
-        jobId: parsed.data.job_id,
-        removeOnComplete: true,
-        removeOnFail: true,
-      });
-    }
-  });
-
-  // Subscribe second channel
-  await subscriber.subscribe(config.job_assign_channel);
-}
+    // Subscribe second channel
+    // await subscriber.subscribe(config.job_assign_channel);
+};
 
 main().catch((err) => {
   console.error(err);
