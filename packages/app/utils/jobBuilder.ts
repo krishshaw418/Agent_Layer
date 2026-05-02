@@ -408,7 +408,7 @@ function createJob(plan: any, messages: ChatMessage[], constraints: any, userAdd
   return job;
 }
 
-export async function createJobFromRequest(request: ChatCompletionRequest) {
+export async function createJobFromRequest(request: ChatCompletionRequest, userAddress: string) {
   const intent = extractUserIntent(request.messages);
   console.log("User Intent:", intent);
 
@@ -432,7 +432,7 @@ export async function createJobFromRequest(request: ChatCompletionRequest) {
     validPlan,
     request.messages,
     constraints,
-    request.metadata?.userId || "0xabc..."
+    userAddress
   );
 
   return job;

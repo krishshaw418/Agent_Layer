@@ -12,6 +12,7 @@ type blockChainCallResponse = {
 }
 
 export async function createJobOnChain(jobId: string, creator: string, maxTokenAmount: string, deadline: number, priority: string, quality: string, minReputation: number): Promise<blockChainCallResponse> {
+    console.log("Create job with creator:", creator);
     const qualityMapping: Record<string, number> = {
         "cheap": 0,
         "fast": 1,

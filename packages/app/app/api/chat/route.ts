@@ -30,13 +30,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "API key revoked" }, { status: 401 });
     }
 
+    const userPublicKey = validKey.userPublicKey;
+
     const body = await request.json();
 
     // Create job from request using the jobBuilder
-    const job = await createJobFromRequest(body);
+    const job = await createJobFromRequest(body, userPublicKey);
 
-    // job deadline is current time + 60sec from request -> number
-    const jobDeadline = Math.floor(Date.now() / 1000) + 60;
+    // job deadline is current time + 30sec from request -> number
+    const jobDeadline = Math.floor(Date.now() / 1000) + 30;
 
     // Insert job into database
     const savedJob = await db.job.create({
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
     const jobId = savedJob.id.toString().trim();
 
     console.log("Job saved to database with ID:", jobId);
+    console.log("Job creator: ", job.createdBy);
 
     // Call createJob on smart contract
     const createJobResponse = await createJobOnChain(

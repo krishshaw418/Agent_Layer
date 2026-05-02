@@ -10,17 +10,19 @@ const client = new OpenAI({
 
 export interface EmbeddingRequest {
   input: string[];
+  input_type?: "query" | "document";
 }
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { input } = body as EmbeddingRequest;
+        const { input, input_type = "query" } = body as EmbeddingRequest;
 
         const response = await client.embeddings.create({
             model: "nvidia/llama-3.2-nemoretriever-300m-embed-v1",
             input: input,
             encoding_format: "float",
+            input_type: input_type,
         });
 
         return NextResponse.json(response);

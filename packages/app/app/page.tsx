@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ArrowUpRight, BookOpen, Cable, CheckCircle2, Cpu, Globe2, Play, ShieldCheck, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,12 +39,10 @@ export default function HomePage() {
       <header className="bg-black text-white py-4 border-b-4 border-[#7a00ff]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center bg-[#7a00ff]">
-              <span className="font-bold text-white text-xs">AL</span>
-            </div>
+            <Image src="/agent_layer_logo.png" alt="Agent Layer" width={30} height={30} className="h-30 w-30 object-contain" />
             <span className="font-black tracking-widest uppercase text-xl">AgentLayer</span>
           </div>
-          
+
           <nav className="hidden items-center gap-8 text-xs font-bold uppercase tracking-widest text-gray-400 md:flex">
             <Link href="/docs" className="transition hover:text-white">Docs</Link>
             <Link href="/playground" className="transition hover:text-white">Playground</Link>
@@ -63,20 +62,20 @@ export default function HomePage() {
         {/* Hero Section matching the image */}
         <section className="grid gap-16 lg:grid-cols-2 lg:items-center">
           <div className="space-y-8">
-            <h1 className="font-black leading-[0.9] tracking-tighter text-[5rem] sm:text-[6rem] lg:text-[7.5rem] uppercase">
-              <span className="block text-black">STOP</span>
-              <span className="block text-black">BUILDING</span>
+            <h1 className="font-black leading-[0.9] tracking-tighter text-[3rem] sm:text-[4.5rem] lg:text-[4rem] xl:text-[4.5rem] uppercase">
+              <span className="block text-black">DECENTRALIZED</span>
+              <span className="block text-black">AI</span>
               <span className="block text-[#7a00ff]">INFRA.</span>
             </h1>
-            
+
             <p className="max-w-md text-xl font-bold leading-relaxed text-gray-800">
-              One AI infrastructure platform that routes, streams, and executes — so you can stop building backends and start scaling.
+              Agent Layer is a DePIN-style infrastructure that allows users to make AI API calls executed by distributed nodes instead of centralized servers.
             </p>
 
             <div className="pt-4 space-y-4">
               <WalletAuthButton className="bg-black hover:bg-gray-800 text-white rounded-none text-lg font-bold px-10 py-8 uppercase shadow-[6px_6px_0px_0px_rgba(122,0,255,1)] transition-transform hover:translate-y-1 hover:translate-x-1 hover:shadow-none" />
               <p className="text-sm font-mono text-gray-500 font-bold uppercase">
-                Open source • Fully typed
+                Trust-minimized • Cheaper AI
               </p>
             </div>
           </div>
@@ -84,33 +83,29 @@ export default function HomePage() {
           <div className="relative mx-auto w-full max-w-lg lg:ml-auto mt-12 lg:mt-0">
             {/* Purple decorative block */}
             <div className="absolute -bottom-8 -right-8 h-40 w-40 bg-[#7a00ff] z-0 hidden sm:block"></div>
-            
-            {/* Brutalist Form Card */}
+
+            {/* Brutalist Code Card */}
             <div className="border-[3px] border-black bg-white p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] relative z-10">
               <p className="mb-6 text-sm font-black uppercase tracking-widest text-black">
-                TEST ANY MODEL — FREE, NO SIGNUP
+                INTEGRATE IN MINUTES
               </p>
-              
-              <div className="flex flex-col sm:flex-row border-[3px] border-black">
-                <div className="flex items-center bg-black px-4 py-4 text-white">
-                  <span className="text-sm font-bold uppercase tracking-wider">PROMPT://</span>
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="How does it work?" 
-                  className="flex-1 bg-white px-4 py-4 text-black font-bold placeholder:text-gray-400 focus:outline-none focus:ring-0 rounded-none border-none"
-                />
-                <Button className="bg-[#7a00ff] hover:bg-[#6000d6] text-white rounded-none border-l-[3px] border-black sm:border-l-0 sm:border-t-0 border-t-[3px] py-6 px-8 h-auto font-black uppercase text-sm">
-                  RUN NOW
-                </Button>
+
+              <div className="flex flex-col border-[3px] border-black bg-black p-5 text-white font-mono text-sm leading-relaxed overflow-x-auto">
+                <p className="text-gray-400 mb-2">{'//'} Initialize the SDK</p>
+                <p><span className="text-[#7a00ff]">import</span> &#123; AgentLayer &#125; <span className="text-[#7a00ff]">from</span> <span className="text-green-400">'@agentlayer/sdk'</span>;</p>
+                <p className="mt-2"><span className="text-[#7a00ff]">const</span> client = <span className="text-[#7a00ff]">new</span> AgentLayer();</p>
+                <p className="mt-4 text-gray-400">{'//'} Route request to network</p>
+                <p><span className="text-[#7a00ff]">const</span> res = <span className="text-[#7a00ff]">await</span> client.chat.completions.create(&#123;</p>
+                <p>&nbsp;&nbsp;messages: [&#123; role: <span className="text-green-400">'user'</span>, content: <span className="text-green-400">'Hello node!'</span> &#125;],</p>
+                <p>&#125;);</p>
               </div>
 
-              <div className="mt-6 flex items-center gap-4 text-xs font-mono font-bold text-gray-500 uppercase">
-                <span>60 SECONDS</span>
+              <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-mono font-bold text-gray-500 uppercase">
+                <span>SDK READY</span>
                 <span>•</span>
-                <span>10+ PROVIDERS</span>
+                <span>WEBSOCKET STREAMING</span>
                 <span>•</span>
-                <span>NO API KEY</span>
+                <span>TOKEN ESTIMATION</span>
               </div>
             </div>
           </div>

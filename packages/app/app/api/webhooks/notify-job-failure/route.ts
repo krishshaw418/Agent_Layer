@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import db from '@/lib/db';
 import dotenv from "dotenv";
+import { getRedisClient } from "@/lib/redis";
+
 dotenv.config();
 
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET!;
+
 
 export async function POST(request: Request) {
   try {
@@ -36,6 +39,9 @@ export async function POST(request: Request) {
     console.log(`Job with ID ${jobId} marked as failed in database.`);
 
     // TODO: Send the job failure notification to the user via pubsub
+    const redisClient = await getRedisClient();
+    await redisClient.publish(`stream:${jobId}`, "__JOB_FAILED__");
+    console.log(`Published job failure notification for jobId ${jobId} to Redis channel stream:${jobId}`);
 
     return NextResponse.json({ message: "Job failure notified successfully" });
   } catch (error) {

@@ -5,41 +5,20 @@ import {
   ArrowUpRight,
   LoaderCircle,
   Sparkles,
-  Waves
+  Waves,
+  Wallet,
+  Hash,
+  KeyRound,
+  EyeOff,
+  Eye
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { ApiKeyInput } from "@/components/api-key-input";
 import { StreamingOutput } from "@/components/streaming-output";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { estimateCredits } from "@/lib/pricing";
-import { modelOptions } from "@/lib/site";
-import { formatCompactNumber } from "@/lib/utils";
 
-type Strategy = "latency" | "cost";
-type PlaygroundTab = "chat" | "embeddings";
-
-type UsageSummary = {
-  prompt_tokens: number;
-  estimated_completion_tokens?: number;
-  total_tokens: number;
-};
-
-type EmbeddingsResult = {
-  object: "list";
-  data: Array<{
-    embedding: number[];
-    index: number;
-  }>;
-  usage?: {
-    prompt_tokens: number;
-    total_tokens: number;
-  };
-};
+type Strategy = "latency" | "cost" | "balanced";
+type PlaygroundTab = "chat" | "embeddings" | "account" | "token";
 
 const STORAGE_KEY = "agent-layer-api-key";
 
@@ -47,178 +26,121 @@ export function PlaygroundClient() {
   const [activeTab, setActiveTab] = useState<PlaygroundTab>("chat");
   const [apiKey, setApiKey] = useState("");
   const [hasLoadedKey, setHasLoadedKey] = useState(false);
+  const [visibleKey, setVisibleKey] = useState(false);
 
-  const [chatModel, setChatModel] = useState("agent-gpt-fast");
-  const [embeddingModel, setEmbeddingModel] = useState("agent-embed-1");
-  const [strategy, setStrategy] = useState<Strategy>("latency");
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === "#embeddings") setActiveTab("embeddings");
+    else if (hash === "#account-balance") setActiveTab("account");
+    else if (hash === "#token-estimation") setActiveTab("token");
+    else setActiveTab("chat");
+  }, []);
+
+  // Chat Parameters
+  const [strategy, setStrategy] = useState<Strategy>("balanced");
   const [prompt, setPrompt] = useState("Explain how decentralized AI routing differs from a centralized inference API.");
+  const [chatTemperature, setChatTemperature] = useState<string>("0.7");
+  const [chatMaxTokens, setChatMaxTokens] = useState<string>("1000");
+
+  // Embedding Parameters
+  const [embeddingModel, setEmbeddingModel] = useState("agent-embed-1");
   const [embeddingInput, setEmbeddingInput] = useState(
     "Distributed compute lets applications route AI jobs across multiple providers."
   );
 
-  const [isChatPending, setIsChatPending] = useState(false);
-  const [isEmbeddingPending, setIsEmbeddingPending] = useState(false);
-  const [streamingOutput, setStreamingOutput] = useState("");
-  const [chatUsage, setChatUsage] = useState<UsageSummary | null>(null);
-  const [chatCostLabel, setChatCostLabel] = useState<string | null>(null);
-  const [embeddingResult, setEmbeddingResult] = useState<EmbeddingsResult | null>(null);
-  const [embeddingCostLabel, setEmbeddingCostLabel] = useState<string | null>(null);
+  // Token Parameters
+  const [tokenInput, setTokenInput] = useState("Explain how decentralized AI routing works.");
+  const [tokenMaxTokens, setTokenMaxTokens] = useState<string>("");
 
-  const socketRef = useRef<WebSocket | null>(null);
+  const [isChatPending, setIsChatPending] = useState(false);
+  const [streamingOutput, setStreamingOutput] = useState("");
+
+  const [isEmbeddingPending, setIsEmbeddingPending] = useState(false);
+  const [embeddingResult, setEmbeddingResult] = useState<any>(null);
+
+  const [isAccountPending, setIsAccountPending] = useState(false);
+  const [accountBalance, setAccountBalance] = useState<any>(null);
+
+  const [isTokenPending, setIsTokenPending] = useState(false);
+  const [tokenResult, setTokenResult] = useState<any>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-
-    if (saved) {
-      setApiKey(saved);
-    }
-
+    if (saved) setApiKey(saved);
     setHasLoadedKey(true);
   }, []);
 
   useEffect(() => {
-    if (!hasLoadedKey) {
-      return;
-    }
-
+    if (!hasLoadedKey) return;
     if (apiKey.trim()) {
       window.localStorage.setItem(STORAGE_KEY, apiKey.trim());
       return;
     }
-
     window.localStorage.removeItem(STORAGE_KEY);
   }, [apiKey, hasLoadedKey]);
 
-  useEffect(() => {
-    return () => {
-      socketRef.current?.close();
-    };
-  }, []);
-
   async function runChat() {
-    if (!apiKey.trim()) {
-      toast.error("Enter an API key to start a chat request.");
-      return;
-    }
+    if (!apiKey.trim()) return toast.error("Enter an API key to start.");
+    if (!prompt.trim()) return toast.error("Prompt is empty.");
 
-    if (!prompt.trim()) {
-      toast.error("Prompt is empty.");
-      return;
-    }
-
-    socketRef.current?.close();
     setIsChatPending(true);
     setStreamingOutput("");
-    setChatUsage(null);
-    setChatCostLabel(null);
 
     try {
-      const response = await fetch("/api/playground/chat", {
+      const response = await fetch("/api/playground/sdk-chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           apiKey: apiKey.trim(),
-          model: chatModel,
           prompt: prompt.trim(),
-          strategy
+          strategy,
+          temperature: chatTemperature ? Number(chatTemperature) : undefined,
+          max_tokens: chatMaxTokens ? Number(chatMaxTokens) : undefined
         })
       });
 
-      const payload = await response.json();
-
       if (!response.ok) {
+        const payload = await response.json();
         throw new Error(payload.error ?? "Chat request failed.");
       }
 
-      setChatUsage(payload.usage);
-      setChatCostLabel(payload.cost.formatted);
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No readable stream");
 
-      const wsUrl = `${payload.wsBaseUrl.replace(/^http/, "ws")}/chat/stream?job_id=${payload.jobId}&api_key=${encodeURIComponent(apiKey.trim())}`;
-      const socket = new WebSocket(wsUrl);
-      socketRef.current = socket;
+      const decoder = new TextDecoder();
+      let done = false;
 
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data) as {
-          done?: boolean;
-          error?: { message?: string };
-          choices?: Array<{
-            delta?: {
-              content?: string;
-            };
-          }>;
-        };
-
-        if (data.error) {
-          toast.error(data.error.message ?? "Streaming error.");
-          setIsChatPending(false);
-          socket.close();
-          return;
-        }
-
-        const chunk = data.choices?.[0]?.delta?.content ?? "";
-
-        if (chunk) {
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: !done });
           setStreamingOutput((current) => current + chunk);
         }
-
-        if (data.done) {
-          setIsChatPending(false);
-          socket.close();
-        }
-      };
-
-      socket.onerror = () => {
-        toast.error("WebSocket connection failed.");
-        setIsChatPending(false);
-      };
-
-      socket.onclose = () => {
-        setIsChatPending(false);
-      };
+      }
     } catch (error) {
-      setIsChatPending(false);
       toast.error(error instanceof Error ? error.message : "Chat request failed.");
+    } finally {
+      setIsChatPending(false);
     }
   }
 
   async function runEmbeddings() {
-    if (!apiKey.trim()) {
-      toast.error("Enter an API key to run embeddings.");
-      return;
-    }
-
-    if (!embeddingInput.trim()) {
-      toast.error("Input is empty.");
-      return;
-    }
+    if (!apiKey.trim()) return toast.error("Enter an API key.");
+    if (!embeddingInput.trim()) return toast.error("Input is empty.");
 
     setIsEmbeddingPending(true);
     setEmbeddingResult(null);
-    setEmbeddingCostLabel(null);
 
     try {
-      const response = await fetch("/api/playground/embeddings", {
+      const response = await fetch("/api/playground/sdk-embeddings", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          apiKey: apiKey.trim(),
-          model: embeddingModel,
-          input: embeddingInput.trim()
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: apiKey.trim(), model: embeddingModel, input: embeddingInput.trim() })
       });
-
       const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Embedding request failed.");
-      }
-
-      setEmbeddingResult(payload.result);
-      setEmbeddingCostLabel(payload.cost.formatted);
+      if (!response.ok) throw new Error(payload.error ?? "Embedding request failed.");
+      setEmbeddingResult(payload);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Embedding request failed.");
     } finally {
@@ -226,202 +148,332 @@ export function PlaygroundClient() {
     }
   }
 
-  const embeddingUsage = embeddingResult?.usage
-    ? {
-        prompt_tokens: embeddingResult.usage.prompt_tokens,
-        total_tokens: embeddingResult.usage.total_tokens
-      }
-    : null;
+  async function runAccountBalance() {
+    if (!apiKey.trim()) return toast.error("Enter an API key.");
+    setIsAccountPending(true);
+    setAccountBalance(null);
+    try {
+      const response = await fetch("/api/playground/sdk-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: apiKey.trim() })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Account request failed.");
+      setAccountBalance(payload);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Account request failed.");
+    } finally {
+      setIsAccountPending(false);
+    }
+  }
 
-  const embeddingPreview = embeddingResult?.data?.[0]?.embedding.slice(0, 12) ?? [];
-  const localEstimate =
-    activeTab === "chat"
-      ? chatUsage
-        ? estimateCredits(chatUsage.total_tokens, strategy, "chat")
-        : null
-      : embeddingUsage
-        ? estimateCredits(embeddingUsage.total_tokens, "cost", "embeddings")
-        : null;
+  async function runTokenEstimation() {
+    if (!apiKey.trim()) return toast.error("Enter an API key.");
+    if (!tokenInput.trim()) return toast.error("Input is empty.");
+    setIsTokenPending(true);
+    setTokenResult(null);
+    try {
+      const response = await fetch("/api/playground/sdk-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: apiKey.trim(),
+          input: tokenInput.trim(),
+          max_tokens: tokenMaxTokens ? Number(tokenMaxTokens) : undefined
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Token estimation failed.");
+      setTokenResult(payload);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Token estimation failed.");
+    } finally {
+      setIsTokenPending(false);
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      <Card className="overflow-hidden">
-        <CardContent className="grid gap-6 p-0 lg:grid-cols-[1.1fr_1.4fr]">
-          <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r">
-            <div className="mb-5 flex flex-wrap gap-2">
-              <PlaygroundTabButton
-                active={activeTab === "chat"}
-                onClick={() => setActiveTab("chat")}
-                icon={<Sparkles className="h-4 w-4" />}
-                label="Chat"
-              />
-              <PlaygroundTabButton
-                active={activeTab === "embeddings"}
-                onClick={() => setActiveTab("embeddings")}
-                icon={<Waves className="h-4 w-4" />}
-                label="Embeddings"
-              />
-            </div>
-            <div className="space-y-5">
-              <ApiKeyInput value={apiKey} onChange={setApiKey} />
-              {activeTab === "chat" ? (
-                <>
-                  <SelectField
-                    label="Model"
-                    value={chatModel}
-                    onChange={setChatModel}
-                    options={modelOptions.filter((item) => item.value !== "agent-embed-1")}
-                  />
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-200">Strategy</label>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <StrategyButton
-                        active={strategy === "latency"}
-                        label="Latency"
-                        description="Prefer lower-latency routing paths."
-                        onClick={() => setStrategy("latency")}
-                      />
-                      <StrategyButton
-                        active={strategy === "cost"}
-                        label="Cost"
-                        description="Prefer cheaper node execution."
-                        onClick={() => setStrategy("cost")}
-                      />
-                    </div>
+    <div className="font-sans text-black">
+      <div className="mb-8 border-[2px] border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col md:flex-row gap-6">
+        <div className="flex-1 space-y-2">
+          <label className="flex items-center gap-2 text-sm font-black uppercase text-black">
+            <KeyRound className="h-4 w-4" />
+            API Key
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              type={visibleKey ? "text" : "password"}
+              autoComplete="off"
+              placeholder="al_sk_live_..."
+              className="font-mono flex-1 border-[2px] border-black px-3 py-2 outline-none focus:bg-[#f0f0f0]"
+            />
+            <button
+              type="button"
+              className="border-[2px] border-black bg-white px-3 py-2 transition-transform active:translate-y-1 hover:bg-gray-100"
+              onClick={() => setVisibleKey((current) => !current)}
+            >
+              {visibleKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <p className="text-xs font-bold text-gray-600">
+            Stored locally in your browser. Used to authenticate requests directly to the network.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
+        <div className="space-y-6">
+          <div className="flex flex-wrap gap-2">
+            <PlaygroundTabButton
+              active={activeTab === "chat"}
+              onClick={() => { setActiveTab("chat"); window.location.hash = "chat-completions"; }}
+              icon={<Sparkles className="h-4 w-4" />}
+              label="Chat Completions"
+            />
+            <PlaygroundTabButton
+              active={activeTab === "embeddings"}
+              onClick={() => { setActiveTab("embeddings"); window.location.hash = "embeddings"; }}
+              icon={<Waves className="h-4 w-4" />}
+              label="Embeddings"
+            />
+            <PlaygroundTabButton
+              active={activeTab === "account"}
+              onClick={() => { setActiveTab("account"); window.location.hash = "account-balance"; }}
+              icon={<Wallet className="h-4 w-4" />}
+              label="Account Balance"
+            />
+            <PlaygroundTabButton
+              active={activeTab === "token"}
+              onClick={() => { setActiveTab("token"); window.location.hash = "token-estimation"; }}
+              icon={<Hash className="h-4 w-4" />}
+              label="Token Estimation"
+            />
+          </div>
+
+          <div className="border-[2px] border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+            
+            {activeTab === "chat" && (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black uppercase text-black">Strategy</label>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <StrategyButton active={strategy === "latency"} label="Latency" onClick={() => setStrategy("latency")} />
+                    <StrategyButton active={strategy === "cost"} label="Cost" onClick={() => setStrategy("cost")} />
+                    <StrategyButton active={strategy === "balanced"} label="Balanced" onClick={() => setStrategy("balanced")} />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-200">Prompt</label>
-                    <Textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
-                  </div>
-                  <Button className="w-full" onClick={runChat} disabled={isChatPending}>
-                    {isChatPending ? (
-                      <>
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                        Streaming
-                      </>
-                    ) : (
-                      <>
-                        Send Chat
-                        <ArrowUpRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <SelectField
-                    label="Model"
-                    value={embeddingModel}
-                    onChange={setEmbeddingModel}
-                    options={modelOptions.filter((item) => item.value === "agent-embed-1")}
-                  />
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-200">Input</label>
-                    <Textarea
-                      value={embeddingInput}
-                      onChange={(event) => setEmbeddingInput(event.target.value)}
+                    <label className="text-sm font-black uppercase text-black">Temperature</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="w-full border-[2px] border-black px-3 py-2 outline-none focus:bg-[#f0f0f0]"
+                      value={chatTemperature}
+                      onChange={(e) => setChatTemperature(e.target.value)}
+                      placeholder="0.7"
                     />
                   </div>
-                  <Button className="w-full" onClick={runEmbeddings} disabled={isEmbeddingPending}>
-                    {isEmbeddingPending ? (
-                      <>
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                        Generating
-                      </>
-                    ) : (
-                      <>
-                        Generate Embedding
-                        <ArrowUpRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="p-5">
-            {activeTab === "chat" ? (
-              <StreamingOutput
-                output={streamingOutput}
-                isStreaming={isChatPending}
-                usage={chatUsage}
-                costLabel={chatCostLabel}
-                placeholder="Send a prompt to watch a decentralized completion stream in real time."
-              />
-            ) : (
-              <EmbeddingsResultPanel
-                result={embeddingResult}
-                isPending={isEmbeddingPending}
-                usage={embeddingUsage}
-                costLabel={embeddingCostLabel}
-                preview={embeddingPreview}
-              />
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase text-black">Max Tokens</label>
+                    <input
+                      type="number"
+                      className="w-full border-[2px] border-black px-3 py-2 outline-none focus:bg-[#f0f0f0]"
+                      value={chatMaxTokens}
+                      onChange={(e) => setChatMaxTokens(e.target.value)}
+                      placeholder="1000"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-black uppercase text-black">Prompt</label>
+                  <textarea 
+                    rows={4}
+                    className="w-full border-[2px] border-black p-3 outline-none focus:bg-[#f0f0f0] resize-none"
+                    value={prompt} 
+                    onChange={(event) => setPrompt(event.target.value)} 
+                  />
+                </div>
+                
+                <button 
+                  className="w-full flex items-center justify-center gap-2 border-[2px] border-black bg-[#E6FE53] hover:bg-[#D4ED31] text-black font-black uppercase py-3 transition-transform active:translate-y-[2px] active:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={runChat} 
+                  disabled={isChatPending}
+                >
+                  {isChatPending ? (
+                    <><LoaderCircle className="h-5 w-5 animate-spin" /> Streaming...</>
+                  ) : (
+                    <><Sparkles className="h-5 w-5" /> Execute Chat</>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {activeTab === "embeddings" && (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black uppercase text-black">Input Text</label>
+                  <textarea
+                    rows={4}
+                    className="w-full border-[2px] border-black p-3 outline-none focus:bg-[#f0f0f0] resize-none"
+                    value={embeddingInput}
+                    onChange={(event) => setEmbeddingInput(event.target.value)}
+                  />
+                </div>
+                <button 
+                  className="w-full flex items-center justify-center gap-2 border-[2px] border-black bg-[#E6FE53] hover:bg-[#D4ED31] text-black font-black uppercase py-3 transition-transform active:translate-y-[2px] active:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={runEmbeddings} 
+                  disabled={isEmbeddingPending}
+                >
+                  {isEmbeddingPending ? (
+                    <><LoaderCircle className="h-5 w-5 animate-spin" /> Generating...</>
+                  ) : (
+                    <><Waves className="h-5 w-5" /> Generate Embeddings</>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {activeTab === "account" && (
+              <div className="space-y-5 text-center py-6">
+                <Wallet className="h-16 w-16 mx-auto mb-4 text-black" />
+                <p className="text-lg font-bold text-gray-700 max-w-md mx-auto mb-6">
+                  Click below to fetch your current account balance using the Agent Layer SDK without any parameters.
+                </p>
+                <button 
+                  className="w-full flex items-center justify-center gap-2 border-[2px] border-black bg-[#E6FE53] hover:bg-[#D4ED31] text-black font-black uppercase py-3 transition-transform active:translate-y-[2px] active:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={runAccountBalance} 
+                  disabled={isAccountPending}
+                >
+                  {isAccountPending ? (
+                    <><LoaderCircle className="h-5 w-5 animate-spin" /> Fetching...</>
+                  ) : (
+                    <><Wallet className="h-5 w-5" /> Get Balance</>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {activeTab === "token" && (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black uppercase text-black">Input Text</label>
+                  <textarea
+                    rows={4}
+                    className="w-full border-[2px] border-black p-3 outline-none focus:bg-[#f0f0f0] resize-none"
+                    value={tokenInput}
+                    onChange={(event) => setTokenInput(event.target.value)}
+                    placeholder="Enter text to estimate token usage"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-black uppercase text-black">Max Tokens (Optional)</label>
+                  <input
+                    type="number"
+                    className="w-full border-[2px] border-black px-3 py-2 outline-none focus:bg-[#f0f0f0]"
+                    value={tokenMaxTokens}
+                    onChange={(e) => setTokenMaxTokens(e.target.value)}
+                    placeholder="1000"
+                  />
+                  <p className="text-xs font-bold text-gray-500">Constraint used to determine estimated completion tokens.</p>
+                </div>
+                <button 
+                  className="w-full flex items-center justify-center gap-2 border-[2px] border-black bg-[#E6FE53] hover:bg-[#D4ED31] text-black font-black uppercase py-3 transition-transform active:translate-y-[2px] active:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={runTokenEstimation} 
+                  disabled={isTokenPending}
+                >
+                  {isTokenPending ? (
+                    <><LoaderCircle className="h-5 w-5 animate-spin" /> Estimating...</>
+                  ) : (
+                    <><Hash className="h-5 w-5" /> Estimate Tokens</>
+                  )}
+                </button>
+              </div>
             )}
           </div>
-        </CardContent>
-      </Card>
-      <div className="grid gap-4 xl:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <Badge>Workflow</Badge>
-            <CardTitle>Playground flow</CardTitle>
-            <CardDescription>
-              Chat requests create a job first, then the response is streamed back over WebSocket.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Badge>Usage estimate</Badge>
-            <CardTitle>{localEstimate?.formatted ?? "Pending request"}</CardTitle>
-            <CardDescription>
-              Costs shown here are heuristic developer estimates derived from token counts and strategy hints.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Badge>Vector preview</Badge>
-            <CardTitle>
-              {embeddingResult?.data?.[0]
-                ? `${formatCompactNumber(embeddingResult.data[0].embedding.length)} dims`
-                : "No embedding yet"}
-            </CardTitle>
-            <CardDescription>
-              Embeddings are truncated in the UI so you can inspect shape without dumping the full array.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    </div>
-  );
-}
+        </div>
 
-function SelectField({
-  label,
-  value,
-  onChange,
-  options
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-}) {
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-slate-200">{label}</label>
-      <select
-        className="flex h-11 w-full rounded-xl border border-white/10 bg-slate-900/70 px-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        {options.map((item) => (
-          <option key={item.value} value={item.value}>
-            {item.label}
-          </option>
-        ))}
-      </select>
+        <div className="flex flex-col h-[600px] lg:h-auto border-[2px] border-black bg-[#F5F5F5] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className="border-b-[2px] border-black px-5 py-4 bg-black text-white flex justify-between items-center">
+            <h3 className="font-black uppercase tracking-wider text-sm flex items-center gap-2">
+              <ArrowUpRight className="h-4 w-4" />
+              Response Output
+            </h3>
+            <span className="text-xs font-mono font-bold px-2 py-1 bg-white text-black border border-white">
+              RAW JSON / STREAM
+            </span>
+          </div>
+          
+          <div className="flex-1 p-5 overflow-y-auto font-mono text-sm bg-[#1A1A1A] text-[#00FF41]">
+            {activeTab === "chat" && (
+              isChatPending && !streamingOutput ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <LoaderCircle className="animate-spin h-8 w-8" />
+                </div>
+              ) : streamingOutput ? (
+                <div className="whitespace-pre-wrap">{streamingOutput}</div>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-600 border-[2px] border-dashed border-gray-600 p-6 text-center">
+                  Execute chat completion to see real-time streaming output here.
+                </div>
+              )
+            )}
+            
+            {activeTab === "embeddings" && (
+              isEmbeddingPending ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <LoaderCircle className="animate-spin h-8 w-8" />
+                </div>
+              ) : embeddingResult ? (
+                <pre className="whitespace-pre-wrap break-all">
+                  {JSON.stringify(embeddingResult, null, 2)}
+                </pre>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-600 border-[2px] border-dashed border-gray-600 p-6 text-center">
+                  Output will be displayed in raw JSON format.
+                </div>
+              )
+            )}
+
+            {activeTab === "account" && (
+              isAccountPending ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <LoaderCircle className="animate-spin h-8 w-8" />
+                </div>
+              ) : accountBalance ? (
+                <pre className="whitespace-pre-wrap break-all">
+                  {JSON.stringify(accountBalance, null, 2)}
+                </pre>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-600 border-[2px] border-dashed border-gray-600 p-6 text-center">
+                  Output will be displayed in raw JSON format.
+                </div>
+              )
+            )}
+
+            {activeTab === "token" && (
+              isTokenPending ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <LoaderCircle className="animate-spin h-8 w-8" />
+                </div>
+              ) : tokenResult ? (
+                <pre className="whitespace-pre-wrap break-all">
+                  {JSON.stringify(tokenResult, null, 2)}
+                </pre>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-600 border-[2px] border-dashed border-gray-600 p-6 text-center">
+                  Output will be displayed in raw JSON format.
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -429,26 +481,23 @@ function SelectField({
 function StrategyButton({
   active,
   label,
-  description,
   onClick
 }: {
   active: boolean;
   label: string;
-  description: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-2xl border px-4 py-3 text-left transition ${
+      className={`border-[2px] border-black px-3 py-2 text-center font-black uppercase text-xs transition-colors ${
         active
-          ? "border-cyan-400/40 bg-cyan-400/12"
-          : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+          ? "bg-black text-white"
+          : "bg-white text-black hover:bg-gray-100"
       }`}
     >
-      <p className="text-sm font-medium text-white">{label}</p>
-      <p className="mt-1 text-xs leading-5 text-slate-400">{description}</p>
+      {label}
     </button>
   );
 }
@@ -468,79 +517,14 @@ function PlaygroundTabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
+      className={`inline-flex items-center gap-2 border-[2px] border-black px-4 py-2 font-black uppercase text-sm transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none ${
         active
-          ? "border-cyan-400/40 bg-cyan-400/12 text-cyan-100"
-          : "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
+          ? "bg-[#E6FE53] text-black"
+          : "bg-white text-black hover:bg-gray-100"
       }`}
     >
       {icon}
       {label}
     </button>
-  );
-}
-
-function EmbeddingsResultPanel({
-  result,
-  isPending,
-  usage,
-  costLabel,
-  preview
-}: {
-  result: EmbeddingsResult | null;
-  isPending: boolean;
-  usage: { prompt_tokens: number; total_tokens: number } | null;
-  costLabel: string | null;
-  preview: number[];
-}) {
-  return (
-    <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-950/75">
-      <div className="border-b border-white/10 px-5 py-4">
-        <p className="text-sm font-medium text-white">Embedding Output</p>
-        <p className="text-xs text-slate-500">Inspect vector shape, token usage, and estimated billing.</p>
-      </div>
-      <div className="flex-1 space-y-4 px-5 py-4">
-        {isPending ? (
-          <div className="grid gap-3">
-            <div className="h-12 animate-pulse rounded-xl bg-white/[0.05]" />
-            <div className="h-28 animate-pulse rounded-2xl bg-white/[0.04]" />
-            <div className="h-16 animate-pulse rounded-xl bg-white/[0.05]" />
-          </div>
-        ) : result?.data?.[0] ? (
-          <>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Vector preview</p>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {preview.map((value, index) => (
-                  <div key={`${value}-${index}`} className="rounded-xl bg-slate-900/80 px-3 py-2 text-xs text-slate-300">
-                    {value.toFixed(5)}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <EmbeddingMetric label="Dimensions" value={`${result.data[0].embedding.length}`} />
-              <EmbeddingMetric label="Prompt Tokens" value={`${usage?.prompt_tokens ?? "-"}`} />
-              <EmbeddingMetric label="Estimated Cost" value={costLabel ?? "-"} />
-            </div>
-          </>
-        ) : (
-          <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] text-center">
-            <p className="max-w-sm text-sm text-slate-400">
-              Submit text to inspect a generated embedding and the usage metadata returned by the SDK.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function EmbeddingMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-100">{value}</p>
-    </div>
   );
 }

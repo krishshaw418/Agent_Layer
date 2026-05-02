@@ -46,15 +46,16 @@ export class ChatResource {
 
     const jobId = response.data.id;
 
-    console.log("Job created with ID:", jobId);
+    // console.log("Job created with ID:", jobId);
 
     return jobId;
   }
 
-  // subcribe to pubsub channel to get response stream for the jobId and yield each chunk as it arrives
+  // subcribe to pubsub channel to get response stream for the jobId and yield each chunk as it arrives and end the pubsub connection when the job is done (indicated by a special message or signal)
   private async *streamResponse(jobId: string) {
     const redis = await getRedisClient();
     const channel = `stream:${jobId}`;
+    const timeoutMs = 180_000;
 
     const subscriber = redis.duplicate();
     await subscriber.connect();
@@ -62,41 +63,70 @@ export class ChatResource {
     const queue: any[] = [];
     let resolve: (() => void) | null = null;
     let done = false;
+    let terminalError: Error | null = null;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
 
-    console.log(`Subscribing to Redis channel: ${channel} for job ID: ${jobId}`);
-    await subscriber.subscribe(channel, (message) => {
-    // console.log(`Received message on channel ${channel}:`, message);
-    // END signal
-    if (message === "__END__") {
+    timeoutHandle = setTimeout(() => {
+      terminalError = new Error(`Chat request timed out after ${timeoutMs / 1000} seconds`);
       done = true;
 
       if (resolve) {
         resolve();
         resolve = null;
       }
-      return;
-    }
+    }, timeoutMs);
 
-    // Each message is a raw text chunk
-    queue.push({
-      choices: [
-        {
-          delta: {
-            content: message,
+    // console.log(`Subscribing to Redis channel: ${channel} for job ID: ${jobId}`);
+    await subscriber.subscribe(channel, (message) => {
+      // console.log(`Received message on channel ${channel}:`, message);
+      // END signal
+      if (message === "__END__") {
+        done = true;
+
+        if (resolve) {
+          resolve();
+          resolve = null;
+        }
+        return;
+      }
+
+      if (message === "__JOB_FAILED__") {
+        terminalError = new Error(`Chat request failed for job ${jobId}`);
+        done = true;
+
+        if (resolve) {
+          resolve();
+          resolve = null;
+        }
+        return;
+      }
+
+      // Each message is a raw text chunk
+      queue.push({
+        choices: [
+          {
+            delta: {
+              content: message,
+            },
           },
-        },
-      ],
+        ],
+      });
+
+      if (resolve) {
+        resolve();
+        resolve = null;
+      }
     });
 
-    if (resolve) {
-      resolve();
-      resolve = null;
-    }
-  });
-
     try {
-      while (!done || queue.length > 0) {
+      while (true) {
         if (queue.length === 0) {
+          if (terminalError) {
+            throw terminalError;
+          }
+
+          if (done) break;
+
           await new Promise<void>((res) => (resolve = res));
         }
 
@@ -104,10 +134,21 @@ export class ChatResource {
           const item = queue.shift();
           yield item;
         }
+
+        if (terminalError) {
+          throw terminalError;
+        }
+
+        if (done && queue.length === 0) break;
       }
     } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+
       await subscriber.unsubscribe(channel);
       await subscriber.quit();
+      // console.log(`Unsubscribed and closed Redis connection for channel: ${channel}`);
     }
   }
 

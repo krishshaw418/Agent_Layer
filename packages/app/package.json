@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@agent_layer/sdk": "^1.0.0",
+    "@agent_layer/sdk": "^1.0.10",
     "@base-org/account": "^2.5.5",
     "@coinbase/wallet-sdk": "^4.3.6",
     "@metamask/connect-evm": "~1.0.0",

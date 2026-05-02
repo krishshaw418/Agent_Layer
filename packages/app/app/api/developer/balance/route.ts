@@ -4,7 +4,7 @@ import { hashApiKey } from "@/utils/generateAPIKey";
 import { getVaultBalanceOnChain } from "@/utils/userOnChainHandlers";
 import { signer } from "@/lib/blockChain";
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
     // extract api key from headers
     const apiKey = request.headers.get("Authorization")?.replace("Bearer ", "").trim();
@@ -34,7 +34,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: vaultBalance.error }, { status: 500 });
     }
 
-    return NextResponse.json({ balance: vaultBalance.data });
+    console.log(`User ${userPublicKey} has vault balance: ${vaultBalance.data}`);
+
+    return NextResponse.json({ balance: Number(vaultBalance.data) });
   } catch (error) {
     console.error("Error in balance route:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
