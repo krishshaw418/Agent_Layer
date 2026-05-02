@@ -37,12 +37,15 @@ export async function POST(request: Request) {
         }
 
         const reputationResponse = await getNodeReputationOnChain(nodePublicKey);
+        console.log("Fetched node reputation for public key:", nodePublicKey, "Reputation:", reputationResponse);
 
         if (!reputationResponse.success) {
+            console.log("Failed to fetch node reputation for public key:", nodePublicKey);
             return NextResponse.json({ error: "Failed to fetch node reputation" }, { status: 500 });
         }
 
-        const reputation = reputationResponse.data;
+        // convert reputation to number from bigint
+        const reputation = Number(reputationResponse.data);
 
         // Store the bid in the database
         const bid = await db.bid.create({

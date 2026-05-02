@@ -1,5 +1,6 @@
 import axios from "axios";
 import { AgentLayerClient } from "../core/client";
+import { getRedisClient } from "../utils/redis";
 
 export type Role = "system" | "user" | "assistant";
 
@@ -43,52 +44,70 @@ export class ChatResource {
       },
     );
 
-    return response.data.job_id;
+    const jobId = response.data.id;
+
+    console.log("Job created with ID:", jobId);
+
+    return jobId;
   }
 
+  // subcribe to pubsub channel to get response stream for the jobId and yield each chunk as it arrives
   private async *streamResponse(jobId: string) {
-    const response = await fetch(
-      `${this.client.baseUrl}/chat/stream?job_id=${jobId}?apiKey=${this.client.apiKey}`
-    );
+    const redis = await getRedisClient();
+    const channel = `stream:${jobId}`;
 
-    if (!response.body) {
-      throw new Error("No response body");
+    const subscriber = redis.duplicate();
+    await subscriber.connect();
+
+    const queue: any[] = [];
+    let resolve: (() => void) | null = null;
+    let done = false;
+
+    console.log(`Subscribing to Redis channel: ${channel} for job ID: ${jobId}`);
+    await subscriber.subscribe(channel, (message) => {
+    // console.log(`Received message on channel ${channel}:`, message);
+    // END signal
+    if (message === "__END__") {
+      done = true;
+
+      if (resolve) {
+        resolve();
+        resolve = null;
+      }
+      return;
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    // Each message is a raw text chunk
+    queue.push({
+      choices: [
+        {
+          delta: {
+            content: message,
+          },
+        },
+      ],
+    });
 
-    let buffer = "";
+    if (resolve) {
+      resolve();
+      resolve = null;
+    }
+  });
 
-    while (true) {
-      const { done, value } = await reader.read();
+    try {
+      while (!done || queue.length > 0) {
+        if (queue.length === 0) {
+          await new Promise<void>((res) => (resolve = res));
+        }
 
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-
-      // split by newline (assuming NLDJSON format)
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-
-        try {
-          const parsed = JSON.parse(line);
-
-          if (parsed.error) {
-            throw new Error(parsed.error.message);
-          }
-
-          yield parsed;
-
-          if (parsed.done) return;
-
-        } catch (err) {
-          console.error("Parse error:", err);
+        while (queue.length > 0) {
+          const item = queue.shift();
+          yield item;
         }
       }
+    } finally {
+      await subscriber.unsubscribe(channel);
+      await subscriber.quit();
     }
   }
 

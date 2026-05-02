@@ -103,7 +103,15 @@ function generateTaskId(taskType: string): string {
   return `${normalizedType}-${Date.now()}-${randomUUID().slice(0, 8)}`;
 }
 
-function mapConstraints(llmConstraints: any, strategy?: string) {
+function calculateTaskComplexityFactor(estimatedTokens: number): number {  
+  if (estimatedTokens < 200) return 0.0;
+  if (estimatedTokens < 500) return (estimatedTokens - 200) / 3000;
+  if (estimatedTokens < 2000) return 0.1 + ((estimatedTokens - 500) / 1500) * 0.3;
+  if (estimatedTokens < 10000) return 0.4 + ((estimatedTokens - 2000) / 8000) * 0.4;
+  return 1.0;
+}
+
+function mapConstraints(llmConstraints: any, strategy?: string, estimatedTokens?: number) {
   const now = Date.now();
   let config = {};
 
@@ -141,9 +149,26 @@ function mapConstraints(llmConstraints: any, strategy?: string) {
         ? INITIAL_REPUTATION + REP_REWARD * 2
         : INITIAL_REPUTATION;
 
+  
+  // Scale reputation based on task complexity
+  let baseMinReputation = Math.max(priorityReputation, qualityReputation);
+  
+  // Scale reputation based on task complexity
+  // Small tasks require lower minimum reputation, large tasks require higher
+  if (estimatedTokens !== undefined) {
+    const complexityFactor = calculateTaskComplexityFactor(estimatedTokens);
+    // Define minimum reputation floor based on task size
+    const minFloor = estimatedTokens < 200 ? 8 : 
+                     estimatedTokens < 500 ? 9 : 
+                     INITIAL_REPUTATION;
+    
+    const scaledReputation = Math.ceil(minFloor + (baseMinReputation - minFloor) * complexityFactor);
+    baseMinReputation = Math.max(minFloor, scaledReputation);
+  }
+
   return {
     ...config,
-    min_reputation: Math.min(MAX_REPUTATION, Math.max(priorityReputation, qualityReputation)),
+    min_reputation: Math.min(MAX_REPUTATION, baseMinReputation),
     deadline,
     priority: llmConstraints.priority,
     quality: llmConstraints.quality
@@ -216,6 +241,17 @@ function estimateInputTokens(task: any, taskTokenMap: Map<string, number>): numb
   }
 
   return FALLBACK_UNKNOWN_TOKENS;
+}
+
+function estimateTaskComplexityTokens(plan: any): number {
+  const taskTokenMap = new Map<string, number>();
+  const task = plan.task;
+
+  if (!task) {
+    return FALLBACK_UNKNOWN_TOKENS;
+  }
+
+  return estimateInputTokens(task, taskTokenMap);
 }
 
 function estimateMaxTokenAmount(
@@ -387,7 +423,10 @@ export async function createJobFromRequest(request: ChatCompletionRequest) {
 
   const validPlan = validatePlan(parsed);
 
-  const constraints = mapConstraints(validPlan.constraints, request.strategy);
+  // Use task-only complexity for reputation so short jobs can stay below 10
+  const estimatedTokens = estimateTaskComplexityTokens(validPlan);
+
+  const constraints = mapConstraints(validPlan.constraints, request.strategy, estimatedTokens);
 
   const job = createJob(
     validPlan,

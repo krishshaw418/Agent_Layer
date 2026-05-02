@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    console.log(`Received job failure notification for jobId: ${jobId}, nodeId: ${nodeId}`);
+    console.log(`Received job assignment notification for jobId: ${jobId}, nodeId: ${nodeId}`);
 
     // publish the jobId and nodeId to Redis channel
     const channel = "job-assignment-channel";
