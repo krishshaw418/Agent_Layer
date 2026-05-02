@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { redisClient } from "@/lib/redis";
+import { getRedisClient } from "@/lib/redis";
 import dotenv from "dotenv";
 dotenv.config();
+
+const redisClient = await getRedisClient();
 
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET!;
 
