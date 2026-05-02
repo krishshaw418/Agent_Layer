@@ -1,7 +1,7 @@
 {
     "PORT": 8080,
-    "NEW_JOBS_CHANNEL": "new_jobs_channel",
-    "JOB_ASSIGN_CHANNEL": "job_assign_channel",
+    "NEW_JOBS_CHANNEL": "new-jobs-channel",
+    "JOB_ASSIGN_CHANNEL": "job-assign-channel",
     "CONTRACT_ADDRESS": "0xFc450a014B1f19230b081D02A429642d2F60fdFc",
     "OLLAMA_HOST": "127.0.0.1",
     "OLLAMA_PORT": 11434

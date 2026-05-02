@@ -10,7 +10,7 @@ import { redis } from "./redis";
 const bid_worker = new Worker('new_jobs_queue', async (msg) => {
 
   const { job_id } = msg.data; // msg.data = { job_id: string }
-
+  console.log(`[worker]: Processing job ${job_id}`);
   try {
     const response = await axios.post<Job>(`${config.node_url}/api/node/job/get-job-details`,
       {
