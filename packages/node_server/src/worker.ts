@@ -77,11 +77,9 @@ const generate_worker = new Worker(
   "assigned_jobs_queue",
   async (msg) => {
     const job_id = msg.data;
-    console.log(job_id);
     const pub = redis.duplicate();
 
     try {
-      console.log(pub.listeners + "\n");
       // Fetch job details
       const response = await axios.post<{ success: boolean; job: Job; }>(
         `${config.node_url}/api/node/job/get-job-details`,
@@ -128,7 +126,6 @@ const generate_worker = new Worker(
           for (const line of lines) {
             try {
               const parsed = JSON.parse(line);
-              console.log(parsed.response);
               if (parsed.response)
                 await pub.publish(`stream:${job_id}`, parsed.response);
               if (parsed.done) resolve(); // resolve on done, let "end" be a safety net

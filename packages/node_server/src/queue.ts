@@ -1,4 +1,3 @@
-import { config } from "./config";
 import { Queue } from "bullmq";
 import { redis } from "./redis";
 

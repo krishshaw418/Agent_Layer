@@ -1,7 +1,7 @@
 import type { Bid } from "node";
 import { contractWithSigner } from "./contract";
 import { config } from "./config";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 
 // Function to submit the bid on chain
 export const submitBid = async (bid: Bid) => {
@@ -24,9 +24,10 @@ export const submitBid = async (bid: Bid) => {
       },
     );
 
+    // Generated bid
     const bid_id = response.data.bidId as string;
 
-    console.log("bid.job_id: ", bid);
+    console.log("bid: ", bid);
 
     // Then place the bid on chain
     const txnResp = await contractWithSigner.placeBid(
