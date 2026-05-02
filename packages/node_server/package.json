@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run ./src/main.ts & bun run ./src/worker.ts",
+    "dev": "bunx concurrently \"bun run ./src/main.ts\" \"bun run ./src/worker.ts\"",
     "build": "bun build ./src/** --outdir ./dist --target=bun",
     "start": "bun run ./dist/main.js"
   },
