@@ -27,6 +27,6 @@ export const jobIdSchema = z.object({
 });
 
 export const jobAssignSchema = z.object({
-    job_id: z.string(),
-    node_id: z.hex()
+    jobId: z.string(),
+    nodeId: z.hex()
 })

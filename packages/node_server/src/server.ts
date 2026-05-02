@@ -46,6 +46,7 @@ export function createServer() {
     };
 
     sub.on("message", async (channel, message) => {
+      console.log(`${channel}:${message}`);
       try {
         if (message === "__END__") {
           res.write(JSON.stringify({ done: true }) + "\n");
