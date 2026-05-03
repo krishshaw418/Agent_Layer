@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
-import { preflightCommand, buildPromptFromJob } from "node";
-import type { Job, Bid } from "node";
+import { preflightCommand, buildPromptFromJob } from "@agent_layer/node";
+import type { Job, Bid } from "@agent_layer/node";
 import { submitBid } from "./utils";
 import axios from "axios";
 import { config } from "./config";

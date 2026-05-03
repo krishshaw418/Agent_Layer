@@ -1,10 +1,10 @@
 {
-  "name": "node",
+  "name": "@agent_layer/node",
   "version": "1.0.0",
   "description": "Pre-flight estimation CLI for Ollama model requests",
   "type": "module",
   "bin": {
-    "preflight": "./dist/bin/preflight.js"
+    "preflight": "dist/bin/preflight.js"
   },
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
