@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
 
     return res;
   } catch (err) {
+    console.error("Error verifying SIWE message:", err);
     return NextResponse.json({ error: "Verification failed" }, { status: 500 });
   }
 }
