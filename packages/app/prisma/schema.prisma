@@ -10,7 +10,7 @@ datasource db {
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   publicKey String   @unique
-  nonce   String?   @unique
+  nonce     String?
   createdAt DateTime @default(now())
 }
 

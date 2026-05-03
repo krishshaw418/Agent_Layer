@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Invalidate the nonce after successful verification
-    await db.user.update({ where: { publicKey: address }, data: { nonce: null } });
+    await db.user.update({ where: { publicKey: address }, data: { nonce: nonce } });
 
     const token = jwt.sign({ address }, JWT_SECRET, {
       expiresIn: "7d",
