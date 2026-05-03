@@ -126,6 +126,7 @@ Browse all available models at [https://ollama.com/library](https://ollama.com/l
 Once all credentials are entered, the script will automatically start the node server by running:
 
 ```bash
+bun install
 bun dev
 ```
 
