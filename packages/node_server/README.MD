@@ -82,7 +82,7 @@ https://base-mainnet.g.alchemy.com/v2/your-api-key
 This is fixed — use the following URL:
 
 ```
-https://agentlayerai.vercel.app/
+https://agentlayerai.vercel.app
 ```
 
 ---
@@ -134,6 +134,7 @@ You should see the server come online on **port 8080**. Keep this terminal windo
 To restart the server manually at any time:
 ```bash
 cd Agent_Layer
+bun install
 bun dev
 ```
 
