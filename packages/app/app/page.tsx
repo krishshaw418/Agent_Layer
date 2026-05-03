@@ -24,7 +24,7 @@ const sections = [
     icon: <Play className="h-5 w-5" />
   },
   {
-    href: "/node",
+    href: "/run-a-node",
     eyebrow: "Providers",
     title: "Explore node operations",
     description: "Review how providers participate in the network and prepare infrastructure to serve workloads.",
@@ -44,9 +44,9 @@ export default function HomePage() {
           </div>
 
           <nav className="hidden items-center gap-8 text-xs font-bold uppercase tracking-widest text-gray-400 md:flex">
-            <Link href="/docs" className="transition hover:text-white">Docs</Link>
-            <Link href="/playground" className="transition hover:text-white">Playground</Link>
-            <Link href="/node" className="transition hover:text-white">Run a Node</Link>
+            <Link href="/docs/get-started" className="transition hover:text-white">Docs</Link>
+            <Link href="/playground#chat-completions" className="transition hover:text-white">Playground</Link>
+            <Link href="/run-a-node" className="transition hover:text-white">Run a Node</Link>
           </nav>
 
           <div className="flex items-center gap-4">
