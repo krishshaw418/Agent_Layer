@@ -8,7 +8,7 @@ set -e
 
 REPO_URL="https://github.com/krishshaw418/Agent_Layer"
 SPARSE_PATH="packages/node_server"
-TARGET_DIR="Agent_Layer_Node"
+TARGET_DIR="Agent_Layer"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
@@ -16,7 +16,7 @@ echo "║         Node Configuration Setup     ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 
-# Sparse checkout — only packages/node_server
+# ── Sparse checkout — only packages/node_server ────────────────────────────────
 echo "📦 Fetching node_server only (sparse checkout)..."
 
 if [ -d "$TARGET_DIR" ]; then
@@ -36,7 +36,7 @@ fi
 echo "✅ node_server ready."
 echo ""
 
-# Navigate into node_server
+# ── Navigate into node_server ──────────────────────────────────────────────────
 cd "$TARGET_DIR"
 echo "📂 Working directory: $(pwd)"
 echo ""
@@ -44,7 +44,7 @@ echo ""
 MANUAL_CONFIG="manual.config.json"
 DEFAULT_CONFIG="default.config.json"
 
-# Write default.config.json
+# ── Write default.config.json ──────────────────────────────────────────────────
 echo "📄 Writing default.config.json..."
 cat > "$DEFAULT_CONFIG" <<'EOF'
 {
@@ -59,7 +59,7 @@ EOF
 echo "✅ default.config.json written."
 echo ""
 
-# Collect manual config values
+# ── Collect manual config values ───────────────────────────────────────────────
 echo "🔧 Please provide values for manual.config.json:"
 echo ""
 
@@ -74,7 +74,7 @@ read -rp "  MODEL              (Model name your machine supports): " MODEL
 
 echo ""
 
-# Write manual.config.json
+# ── Write manual.config.json ───────────────────────────────────────────────────
 echo "📄 Writing manual.config.json..."
 cat > "$MANUAL_CONFIG" << EOF
 {
@@ -90,7 +90,7 @@ EOF
 echo "✅ manual.config.json written."
 echo ""
 
-# Summary
+# ── Summary ────────────────────────────────────────────────────────────────────
 echo "╔══════════════════════════════════════╗"
 echo "║           Setup Complete ✓           ║"
 echo "╚══════════════════════════════════════╝"
@@ -101,3 +101,8 @@ echo "    • $MANUAL_CONFIG"
 echo ""
 echo "  ⚠️  Keep manual.config.json private — it contains your private key."
 echo ""
+
+# ── Start the server ───────────────────────────────────────────────────────────
+echo "🚀 Starting the server..."
+echo ""
+bun dev
