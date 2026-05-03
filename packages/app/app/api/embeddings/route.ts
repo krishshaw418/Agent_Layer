@@ -23,7 +23,7 @@ export async function POST(request: Request) {
             input: input,
             encoding_format: "float",
             input_type: input_type,
-        });
+        } as any);
 
         return NextResponse.json(response);
     } catch (error) {
