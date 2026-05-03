@@ -51,6 +51,22 @@ export class ChatResource {
     return jobId;
   }
 
+  private async markJobCompleted(jobId: string): Promise<void> {
+    try {
+      await axios.post(
+        `${this.client.baseUrl}/mark-job-completed`,
+        { jobId },
+        {
+          headers: {
+            Authorization: `Bearer ${this.client.apiKey}`,
+          },
+        },
+      );
+    } catch {
+      // Completion notification should never block the chat response.
+    }
+  }
+
   // subcribe to pubsub channel to get response stream for the jobId and yield each chunk as it arrives and end the pubsub connection when the job is done (indicated by a special message or signal)
   private async *streamResponse(jobId: string) {
     const redis = await getRedisClient();
@@ -65,6 +81,7 @@ export class ChatResource {
     let done = false;
     let terminalError: Error | null = null;
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    let completedSuccessfully = false;
 
     timeoutHandle = setTimeout(() => {
       terminalError = new Error(`Chat request timed out after ${timeoutMs / 1000} seconds`);
@@ -141,9 +158,15 @@ export class ChatResource {
 
         if (done && queue.length === 0) break;
       }
+
+      completedSuccessfully = true;
     } finally {
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
+      }
+
+      if (completedSuccessfully) {
+        void this.markJobCompleted(jobId);
       }
 
       await subscriber.unsubscribe(channel);
