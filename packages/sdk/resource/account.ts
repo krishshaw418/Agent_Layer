@@ -19,7 +19,7 @@ export class AccountResource {
 
     try {
       const response = await axios.get(
-        `${this.client.baseUrl}/account/balance`,
+        `${this.client.baseUrl}/developer/balance`,
         {
           headers: {
             Authorization: `Bearer ${this.client.apiKey}`,

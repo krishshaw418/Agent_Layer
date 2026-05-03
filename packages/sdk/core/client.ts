@@ -11,7 +11,7 @@ export class AgentLayerClient {
     account: AccountResource;
     token: TokenResource;
 
-    constructor(apiKey: string, baseUrl: string = "https://api.agentlayer.ai") {
+    constructor(apiKey: string, baseUrl: string = "https://agentlayerai.vercel.app/api") {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.chat = new ChatResource(this);

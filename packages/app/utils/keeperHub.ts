@@ -64,3 +64,27 @@ export async function finalizeOnMaxBid(jobId: string): Promise<boolean> {
         return true;
     }
 }
+
+
+export async function markJobAsCompleted(jobId: string): Promise<boolean> {
+    const apiKey = process.env.KEEPERHUB_WEBHOOK_API_KEY!.trim();
+    const response = await fetch("https://app.keeperhub.com/api/workflows/ynyn26d7p0d616qw76gfc/webhook", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": apiKey
+        },
+        body: JSON.stringify({
+            jobId: jobId,
+        })
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        console.log("KeeperHub error:", response.status, text);
+        return false;
+    } else {
+        console.log("Successfully checked for finalized job on KeeperHub for max bids:", jobId);
+        return true;
+    }
+}
