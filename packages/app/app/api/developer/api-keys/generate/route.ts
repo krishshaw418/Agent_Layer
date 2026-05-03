@@ -9,13 +9,14 @@ export async function POST(request: Request) {
         const user = getUserFromRequest(request as any);
 
         if (!user) {
+            console.error("Unauthorized: No user found in request");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { userPublicKey, keyName } = await request.json();
 
-        // verify that the userPublicKey matches the authenticated user's public key
-        if (userPublicKey !== user.address) {
+        if (userPublicKey && userPublicKey.toLowerCase() !== user.address.toLowerCase()) {
+            console.error("Unauthorized: User public key does not match authenticated user");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
                 keyHash: apiKeyHash,
                 KeyName: keyName || "Default Key Name",
                 KeyStartingCharacter: apiKey.substring(0, 4), // Store the starting characters for reference
-                userPublicKey: userPublicKey,
+                userPublicKey: user.address, // always store address from verified token
             },
         });
 
