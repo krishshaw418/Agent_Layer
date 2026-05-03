@@ -4,7 +4,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
 
 import { AppToaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/provider";
-import "@/app/globals.css";
+import "./globals.css";
 
 const sans = IBM_Plex_Sans({
   subsets: ["latin"],
