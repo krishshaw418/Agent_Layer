@@ -53,6 +53,7 @@ cat > "$DEFAULT_CONFIG" <<'EOF'
   "JOB_ASSIGN_CHANNEL": "job-assignment-channel",
   "CONTRACT_ADDRESS": "0x86f4089F7726dc0b4Cfe9B2540A81b12355e6FFa",
   "OLLAMA_HOST": "127.0.0.1",
+  "UPSTASH_REDIS_URL": "rediss://default:gQAAAAAAAbGzAAIgcDEyYTE2NzNkYTY1Yjc0NTEyOTg3NDM1YmNjZjZiOTY0MA@touching-lamprey-111027.upstash.io:6379",
   "OLLAMA_PORT": 11434
 }
 EOF
@@ -63,7 +64,6 @@ echo ""
 echo "🔧 Please provide values for manual.config.json:"
 echo ""
 
-read -rp "  UPSTASH_REDIS_URL  (Upstash Redis URL)          : " UPSTASH_REDIS_URL
 read -rp "  BASE_RPC_URL       (Alchemy RPC URL)            : " BASE_RPC_URL
 read -rp "  NODE_QUERY_URL     (Node URL for querying DB)   : " NODE_QUERY_URL
 read -rp "  NODE_API_KEY       (Node API key)               : " NODE_API_KEY
@@ -78,7 +78,6 @@ echo ""
 echo "📄 Writing manual.config.json..."
 cat > "$MANUAL_CONFIG" << EOF
 {
-    "UPSTASH_REDIS_URL": "$UPSTASH_REDIS_URL",
     "BASE_RPC_URL": "$BASE_RPC_URL",
     "NODE_QUERY_URL": "$NODE_QUERY_URL",
     "NODE_API_KEY": "$NODE_API_KEY",

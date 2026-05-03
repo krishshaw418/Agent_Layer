@@ -9,14 +9,14 @@ export const config = {
 
     // Default configs
     port: parsedDefault.PORT,
+    redis_url: parsedDefault.UPSTASH_REDIS_URL,
     contract_add: parsedDefault.CONTRACT_ADDRESS,
     new_jobs_channel: parsedDefault.NEW_JOBS_CHANNEL,
     job_assign_channel: parsedDefault.JOB_ASSIGN_CHANNEL,
     ollama_host: parsedDefault.OLLAMA_HOST,
     ollama_port: parsedDefault.OLLAMA_PORT,
 
-    // Manual configs
-    redis_url: parsedManual.UPSTASH_REDIS_URL,
+    // Manual configs,
     rpc_url: parsedManual.BASE_RPC_URL,
     priv_key: parsedManual.PRIVATE_KEY,
     public_key: parsedManual.PUBLIC_ADDRESS,
