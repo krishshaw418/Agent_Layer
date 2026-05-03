@@ -1,0 +1,161 @@
+# Agent Layer Node Setup Guide
+
+Follow this guide to download the node bootstrap script, gather your credentials, and start your Agent Layer node locally.
+
+<Callout>
+  Keep your `manual.config.json` private. It contains credentials required to run the node.
+</Callout>
+
+## At a glance
+
+<div className="grid gap-4 md:grid-cols-3">
+  <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#7a00ff]">Step 1</p>
+    <p className="mt-2 text-lg font-black uppercase text-black">Download setup.sh</p>
+    <p className="mt-2 text-sm font-medium leading-6 text-gray-700">Run the bootstrap script from the folder where you downloaded it.</p>
+  </div>
+  <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#7a00ff]">Step 2</p>
+    <p className="mt-2 text-lg font-black uppercase text-black">Fill credentials</p>
+    <p className="mt-2 text-sm font-medium leading-6 text-gray-700">Provide wallet, RPC, API key, and model details when prompted.</p>
+  </div>
+  <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#7a00ff]">Step 3</p>
+    <p className="mt-2 text-lg font-black uppercase text-black">Start the server</p>
+    <p className="mt-2 text-sm font-medium leading-6 text-gray-700">The script launches `bun dev` and keeps the node running on port 8080.</p>
+  </div>
+</div>
+
+## Prerequisites
+
+Before running the setup script, install these dependencies:
+
+- **Git** — [Download Git](https://git-scm.com/downloads)
+- **Bun v1.3.6** — Install with:
+
+```bash
+curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.6"
+```
+
+Verify with:
+
+```bash
+bun --version
+```
+
+- **Ollama** — [Download Ollama](https://ollama.com/download) for local model execution
+
+## 1. Download and run `setup.sh`
+
+1. Download `setup.sh` from [agentlayerai.vercel.app](https://agentlayerai.vercel.app/)
+2. Open a terminal in the folder where you downloaded it
+3. Make it executable and run it:
+
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+The script will:
+
+- Clone the `node_server` into a local `Agent_Layer/` directory
+- Write `default.config.json` automatically
+- Prompt you for the values that belong in `manual.config.json`
+
+## 2. Gather your credentials
+
+<div className="grid gap-4 lg:grid-cols-2">
+  <div className="border-[3px] border-black bg-[#f7f7f7] p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#7a00ff]">Wallet</p>
+    <h3 className="mt-2 text-2xl font-black uppercase text-black">`PRIVATE_KEY` and `PUBLIC_ADDRESS`</h3>
+    <p className="mt-3 text-sm leading-7 text-gray-700">Use a wallet on Base Mainnet, such as MetaMask. Your public address is the `0x...` address shown in the wallet, and your private key comes from the wallet settings.</p>
+    <p className="mt-3 text-sm font-semibold text-gray-800">Never share your private key. Keep `manual.config.json` out of version control.</p>
+  </div>
+
+  <div className="border-[3px] border-black bg-[#f7f7f7] p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#7a00ff]">RPC</p>
+    <h3 className="mt-2 text-2xl font-black uppercase text-black">`BASE_RPC_URL`</h3>
+    <p className="mt-3 text-sm leading-7 text-gray-700">Create a Base Mainnet RPC endpoint in Alchemy and copy the HTTPS URL into this field.</p>
+    <div className="mt-4 border-[2px] border-black bg-white p-3 text-sm font-mono text-black">https://base-mainnet.g.alchemy.com/v2/your-api-key</div>
+  </div>
+
+  <div className="border-[3px] border-black bg-[#f7f7f7] p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#7a00ff]">Endpoint</p>
+    <h3 className="mt-2 text-2xl font-black uppercase text-black">`NODE_QUERY_URL`</h3>
+    <p className="mt-3 text-sm leading-7 text-gray-700">This value is fixed and should remain set to the Agent Layer query endpoint below.</p>
+    <div className="mt-4 border-[2px] border-black bg-white p-3 text-sm font-mono text-black">https://agentlayerai.vercel.app/</div>
+  </div>
+
+  <div className="border-[3px] border-black bg-[#f7f7f7] p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#7a00ff]">API key</p>
+    <h3 className="mt-2 text-2xl font-black uppercase text-black">`NODE_API_KEY`</h3>
+    <p className="mt-3 text-sm leading-7 text-gray-700">Sign in to the site, connect your Base wallet, and copy the displayed API key into the config prompt.</p>
+  </div>
+</div>
+
+### `MODEL` - Ollama model name
+
+Set `MODEL` to any Ollama model you want to run locally, based on the hardware available on your machine. Pull the model first, then use the same model name in the config.
+
+```bash
+ollama pull <your-model-name>
+```
+
+For model selection, installation help, and usage details, refer to the [Ollama documentation](https://ollama.com/docs).
+
+## 3. Server starts automatically
+
+Once all values are entered, the script will start the node server for you:
+
+```bash
+bun dev
+```
+
+The server should come online on port 8080. Keep that terminal open; closing it stops the node.
+
+To restart it later:
+
+```bash
+cd Agent_Layer
+bun dev
+```
+
+## What gets created
+
+After the script finishes, your `Agent_Layer/` directory will look like this:
+
+```text
+Agent_Layer/
+├── default.config.json
+├── manual.config.json
+└── ... node_server files
+```
+
+## Troubleshooting
+
+<div className="grid gap-4 lg:grid-cols-2">
+  <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-sm font-black uppercase text-black">Permission denied</p>
+    <p className="mt-2 text-sm text-gray-700">Run `chmod +x setup.sh` and try again.</p>
+  </div>
+  <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-sm font-black uppercase text-black">Git not found</p>
+    <p className="mt-2 text-sm text-gray-700">Install Git from the official download page and reopen your terminal.</p>
+  </div>
+  <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-sm font-black uppercase text-black">Bun missing after install</p>
+    <p className="mt-2 text-sm text-gray-700">Restart the terminal or reload your shell environment.</p>
+  </div>
+  <div className="border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <p className="text-sm font-black uppercase text-black">Ollama model not running</p>
+    <p className="mt-2 text-sm text-gray-700">Make sure Ollama is running in the background, then start your node again.</p>
+  </div>
+</div>
+
+```bash
+ollama serve
+```
+
+## Support
+
+For help, visit [agentlayerai.vercel.app](https://agentlayerai.vercel.app/) or open an issue on the repository.

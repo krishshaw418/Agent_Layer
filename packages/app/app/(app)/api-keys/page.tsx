@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAccount } from "wagmi";
 
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateApiKeyModal } from "./create-api-key-modal";
 import { DepositModal } from "./deposit-modal";
@@ -30,6 +31,7 @@ export default function ApiKeysPage() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     fetchApiKeys();
@@ -76,9 +78,9 @@ export default function ApiKeysPage() {
       const response = await getVaultBalanceOnChain(address, signer);
 
       if (response.success && response.data) {
-        // Vault stores AGT token amounts (6 decimals)
-        const balanceInAgt = ethers.formatUnits(response.data, 6);
-        setVaultBalance(parseFloat(balanceInAgt).toFixed(4));
+        // Vault stores AGL token amounts (6 decimals)
+        const balanceInAgl = ethers.formatUnits(response.data, 6);
+        setVaultBalance(parseFloat(balanceInAgl).toFixed(4));
       } else {
         throw new Error(response.error || "Failed to fetch balance");
       }
@@ -194,7 +196,7 @@ export default function ApiKeysPage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-4">
               <h1 className="text-5xl font-black text-black uppercase tracking-tight">API Keys</h1>
-              <p className="text-lg font-bold text-gray-700 max-w-xl">
+              <p className="text-lg font-bold text-gray-700 max-w-lg">
                 Manage your API keys. Keep them secure and revoke them when no longer needed.
               </p>
             </div>
@@ -209,20 +211,38 @@ export default function ApiKeysPage() {
                     <p className="text-sm font-bold text-gray-600">Loading...</p>
                   </div>
                 ) : (
-                  <p className="text-3xl font-black text-[#7a00ff]">
-                    {vaultBalance ? `${vaultBalance} AGT` : "—"}
-                  </p>
+                  <div>
+                    <p className="text-3xl font-black text-[#7a00ff]">
+                      {vaultBalance ? `${vaultBalance} AGL` : "—"}
+                    </p>
+                    {vaultBalance && (
+                      <p className="text-sm font-bold text-gray-600">
+                        ≈ {new Intl.NumberFormat().format(Math.floor(parseFloat(vaultBalance) * 1e6))} LLM tokens
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
-              <Button
-                onClick={() => setIsDepositModalOpen(true)}
-                disabled={isDepositing}
-                className="bg-black text-white hover:bg-gray-800 rounded-none border-[3px] border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all font-black uppercase text-sm px-6"
-                size="lg"
-              >
-                <Wallet className="mr-2 h-4 w-4" />
-                {isDepositing ? "Depositing..." : "Recharge Vault"}
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setIsDepositModalOpen(true)}
+                  disabled={isDepositing}
+                  className="bg-black text-white hover:bg-gray-800 rounded-none border-[3px] border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all font-black uppercase text-sm px-6"
+                  size="lg"
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  {isDepositing ? "Depositing..." : "Recharge Vault"}
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => router.push("/purchase-token")}
+                  className="flex items-center bg-white text-black hover:bg-gray-100 rounded-none border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all font-black uppercase text-sm px-6"
+                  size="lg"
+                >
+                  Purchase AGL
+                </Button>
+              </div>
             </div>
           </div>
 

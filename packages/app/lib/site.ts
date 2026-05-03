@@ -29,7 +29,7 @@ export const mainNav = [
 
 export const docsNav = [
   { slug: "introduction", title: "Introduction" },
-  { slug: "getting-started", title: "Getting Started" },
+  { slug: "get-started", title: "Get Started" },
   { slug: "authentication", title: "Authentication" },
   { slug: "sdk-overview", title: "SDK Overview" },
   { slug: "chat-api", title: "Chat API" },

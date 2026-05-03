@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import Link from "next/link";
@@ -18,6 +18,10 @@ const menuItems = [
     title: "Docs",
     icon: BookOpen,
     items: [
+      {
+        title: "Get Started",
+        href: "/docs/get-started"
+      },
       {
         title: "Agent Layer SDK",
         href: "/docs/sdk",
@@ -44,7 +48,7 @@ const menuItems = [
       { title: "Token Estimation", href: "/playground#token-estimation" }
     ]
   },
-  { title: "Run A Node", icon: ServerCog, items: [] },
+  { title: "Run A Node", href: "/run-a-node", icon: ServerCog },
   { title: "About", href: "/about", icon: Layers3 }
 ];
 
@@ -112,8 +116,19 @@ function SubExpandableNavItem({ item, pathname, onNavigate }: any) {
 }
 
 function ExpandableNavItem({ item, collapsed, pathname, onNavigate }: any) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => item.title === "Docs" && pathname.startsWith("/docs"));
   const Icon = item.icon;
+  const active = item.href
+    ? pathname === item.href || pathname.startsWith(`${item.href}/`)
+    : item.title === "Docs"
+      ? pathname.startsWith("/docs")
+      : false;
+
+  useEffect(() => {
+    if (item.title === "Docs" && pathname.startsWith("/docs")) {
+      setIsExpanded(true);
+    }
+  }, [item.title, pathname]);
 
   return (
     <div className="mb-1">
@@ -121,7 +136,9 @@ function ExpandableNavItem({ item, collapsed, pathname, onNavigate }: any) {
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
           "w-full group flex items-center justify-between gap-3 px-3 py-2.5 text-sm transition font-black uppercase tracking-wider border-[2px] rounded-none",
-          "text-gray-700 border-transparent hover:border-black hover:bg-gray-100"
+          active
+            ? "bg-[#7a00ff] text-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
+            : "text-gray-700 border-transparent hover:border-black hover:bg-gray-100"
         )}
       >
         <div className="flex items-center gap-3">

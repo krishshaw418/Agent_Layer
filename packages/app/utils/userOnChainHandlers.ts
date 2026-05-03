@@ -90,3 +90,28 @@ export async function purchaseAGLTokensOnChain(amount: string, signer: ethers.Si
     return { success: false, error: "Failed to purchase AGL tokens" };
   }
 }
+
+export async function sellAGLTokensOnChain(amount: string, signer: ethers.Signer): Promise<blockChainCallResponse> {
+  try {
+    // AGL has 6 decimals
+    const aglAmount = ethers.parseUnits(amount, 6); // BigInt
+
+    const gatewayContract = getAgentLayerTokenGatewayContract(signer);
+    const tokenContract = getAgentLayerTokenContract(signer);
+
+    const approveTx = await tokenContract.approve(
+      await gatewayContract.getAddress(),
+      aglAmount
+    );
+    await approveTx.wait();
+
+    const tx = await gatewayContract.withdraw(aglAmount);
+    const receipt = await tx.wait();
+
+    return { success: true, data: receipt };
+
+  } catch (error) {
+    console.error("Error selling AGL tokens:", error);
+    return { success: false, error: "Failed to sell AGL tokens" };
+  }
+}

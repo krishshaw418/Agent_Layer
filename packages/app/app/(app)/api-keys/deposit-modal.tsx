@@ -72,7 +72,7 @@ export function DepositModal({
 
     // If token balance is known and less than amount, prevent deposit
     if (tokenBalance !== null && !isNaN(parseFloat(tokenBalance)) && parseFloat(tokenBalance) < parseFloat(amount)) {
-      toast.error("Insufficient Agent Layer Token balance. Purchase AGT first.");
+      toast.error("Insufficient Agent Layer Token balance. Purchase AGL first.");
       return;
     }
 
@@ -118,7 +118,7 @@ export function DepositModal({
         <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6">
           <div className="space-y-3">
             <label htmlFor="amount" className="block text-sm font-black uppercase tracking-widest text-black">
-              Deposit Amount (AGT)
+              Deposit Amount (AGL)
             </label>
             <Input
               id="amount"
@@ -132,14 +132,14 @@ export function DepositModal({
               className="border-[3px] border-black bg-white text-black font-bold rounded-none focus-visible:ring-0 focus-visible:border-[#7a00ff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-6 px-4 placeholder:text-gray-400"
               autoFocus
             />
-            <p className="text-[11px] font-bold text-gray-600 uppercase">Enter the amount of Agent Layer Token (AGT) you want to deposit into your vault</p>
+            <p className="text-[11px] font-bold text-gray-600 uppercase">Enter the amount of Agent Layer Token (AGL) you want to deposit into your vault</p>
 
             <div className="mt-2 text-sm font-bold text-gray-700 uppercase tracking-wider">
-              <span className="text-black">AGT Balance: </span>
+              <span className="text-black">AGL Balance: </span>
               {isCheckingBalance ? (
                 <span className="ml-2">Checking...</span>
               ) : tokenBalance !== null ? (
-                <span className="ml-2 text-[#7a00ff]">{parseFloat(tokenBalance).toFixed(4)} AGT</span>
+                <span className="ml-2 text-[#7a00ff]">{parseFloat(tokenBalance).toFixed(4)} AGL</span>
               ) : (
                 <span className="ml-2">—</span>
               )}

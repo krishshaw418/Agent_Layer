@@ -6,6 +6,7 @@ import "prismjs/components/prism-bash";
 import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-json";
 import "prismjs/components/prism-markdown";
+import "prismjs/components/prism-jsx";
 import "prismjs/components/prism-tsx";
 import "prismjs/components/prism-typescript";
 import { useMemo, useState } from "react";
@@ -48,18 +49,18 @@ export function CodeBlock({
   }
 
   return (
-    <div className={cn("overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95", className)}>
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+    <div className={cn("overflow-hidden border-[3px] border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]", className)}>
+      <div className="flex items-center justify-between border-b-[3px] border-black bg-black px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+          <span className="text-xs font-black uppercase tracking-[0.18em] text-white">
             {title ?? prismLanguage}
           </span>
         </div>
-        <Button size="sm" variant="ghost" onClick={handleCopy}>
+        <Button size="sm" variant="ghost" onClick={handleCopy} className="border-[2px] border-white text-white hover:bg-white hover:text-black rounded-none">
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         </Button>
       </div>
-      <pre className="overflow-x-auto p-4 text-sm leading-6 text-slate-100">
+      <pre className="overflow-x-auto bg-white p-4 text-sm leading-6 text-black">
         <code dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
     </div>

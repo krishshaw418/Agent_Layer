@@ -8,6 +8,15 @@ export type DocMeta = {
   eyebrow: string;
 };
 
+const slugAliases: Record<string, string> = {
+  "getting-started": "get-started",
+  "node": "agent-layer-node"
+};
+
+function resolveDocSlug(slug: string) {
+  return slugAliases[slug] ?? slug;
+}
+
 export const docSections: DocMeta[] = [
   {
     slug: "introduction",
@@ -16,9 +25,9 @@ export const docSections: DocMeta[] = [
     eyebrow: "Overview"
   },
   {
-    slug: "getting-started",
-    title: "Getting Started",
-    description: "Install the SDK, configure your API key, and send your first request.",
+    slug: "get-started",
+    title: "Get Started",
+    description: "Create an API key, fund your vault, and prepare your first SDK request.",
     eyebrow: "Quickstart"
   },
   {
@@ -62,17 +71,24 @@ export const docSections: DocMeta[] = [
     title: "Error Handling",
     description: "Handle transport, billing, and job execution failures without surprising users.",
     eyebrow: "Reliability"
+  },
+  {
+    slug: "agent-layer-node",
+    title: "Agent Layer Node",
+    description: "Set up a node, provide credentials, and run the local server on Base.",
+    eyebrow: "Node Setup"
   }
 ];
 
 export async function getDocBySlug(slug = "introduction") {
-  const section = docSections.find((item) => item.slug === slug);
+  const resolvedSlug = resolveDocSlug(slug);
+  const section = docSections.find((item) => item.slug === resolvedSlug);
 
   if (!section) {
     return null;
   }
 
-  const filePath = path.join(process.cwd(), "content", "docs", `${slug}.mdx`);
+  const filePath = path.join(process.cwd(), "content", "docs", `${resolvedSlug}.mdx`);
   const content = await readFile(filePath, "utf8");
 
   return {
@@ -82,7 +98,8 @@ export async function getDocBySlug(slug = "introduction") {
 }
 
 export function getDocPagination(slug = "introduction") {
-  const index = docSections.findIndex((item) => item.slug === slug);
+  const resolvedSlug = resolveDocSlug(slug);
+  const index = docSections.findIndex((item) => item.slug === resolvedSlug);
 
   return {
     previous: index > 0 ? docSections[index - 1] : null,

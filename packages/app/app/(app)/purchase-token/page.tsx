@@ -185,15 +185,15 @@ export default function PurchaseTokenPage() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-12">
           <div>
             <h1 className="text-5xl font-black uppercase text-black tracking-tight leading-none">Purchase Tokens</h1>
-            <p className="text-lg font-bold text-gray-700 mt-4 max-w-md">Swap USDC for Agent Layer Token (AGT) on Base.</p>
+            <p className="text-lg font-bold text-gray-700 mt-4 max-w-md">Swap USDC for Agent Layer Token (AGL) on Base.</p>
           </div>
 
           {/* Balances Display */}
           <div className="flex flex-col gap-3 min-w-fit">
             <div className="border-[3px] border-black bg-white px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <p className="text-[11px] font-black uppercase tracking-widest text-black">AGT Balance</p>
+              <p className="text-[11px] font-black uppercase tracking-widest text-black">AGL Balance</p>
               <p className="text-lg font-black text-[#7a00ff] mt-1">
-                {isLoadingBalances ? "..." : aglBalance ? parseFloat(aglBalance).toFixed(2) : "—"} AGT
+                {isLoadingBalances ? "..." : aglBalance ? parseFloat(aglBalance).toFixed(2) : "—"} AGL
               </p>
             </div>
             <div className="border-[3px] border-black bg-white px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -211,14 +211,14 @@ export default function PurchaseTokenPage() {
             {rate && (
               <div className="flex-1 border-[3px] border-black bg-[#7a00ff] p-4 text-sm font-black uppercase tracking-widest text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                 <p>
-                  1 USDC = {ethers.formatUnits(rate, 6)} AGT
+                  1 USDC = {ethers.formatUnits(rate, 6)} AGL
                 </p>
               </div>
             )}
 
             {/* AGL to Output Tokens Info */}
             <div className="flex-1 border-[3px] border-black bg-white p-4 text-sm font-black uppercase tracking-widest text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-              <p>1 AGT = 1,000,000 outputs</p>
+              <p>1 AGL = 1,000,000 outputs</p>
             </div>
           </div>
 
@@ -249,7 +249,7 @@ export default function PurchaseTokenPage() {
           </div>
 
           <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <label className="text-sm font-black uppercase tracking-widest text-black">You receive (AGT)</label>
+            <label className="text-sm font-black uppercase tracking-widest text-black">You receive (AGL)</label>
             <div className="mt-3 flex gap-3">
               <Input
                 value={aglAmount}
@@ -260,7 +260,7 @@ export default function PurchaseTokenPage() {
                 className="flex-1 border-[3px] border-black bg-white text-black font-bold rounded-none focus-visible:ring-0 focus-visible:border-[#7a00ff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-6 px-4 placeholder:text-gray-400"
               />
               <div className="flex items-center gap-2 rounded-none border-[3px] border-black bg-[#7a00ff] px-6 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <span className="text-sm font-black uppercase text-white">AGT</span>
+                <span className="text-sm font-black uppercase text-white">AGL</span>
               </div>
             </div>
             {aglAmount.trim() && !isNaN(parseFloat(aglAmount)) && (
