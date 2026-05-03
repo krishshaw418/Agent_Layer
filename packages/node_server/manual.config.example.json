@@ -1,9 +1,0 @@
-{
-    "UPSTASH_REDIS_URL": "upstash-redis-url",
-    "BASE_RPC_URL": "alchemy-rpc-url",
-    "NODE_QUERY_URL": "node-url-for-querying-db",
-    "NODE_API_KEY": "node-api-key-for-interacting-with-node-apis",
-    "PRIVATE_KEY": "your-private-key",
-    "PUBLIC_ADDRESS": "your-public-key-to-interact-with-onchain-smart-contract",
-    "MODEL": "model-name-your-machine-can-support"
-}
