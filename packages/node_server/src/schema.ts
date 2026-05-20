@@ -22,7 +22,8 @@ export const defaultConfigSchema = z.object({
 export const msgSchema = z.object({
     event: z.string(),
     data: z.object({
-        jobId: z.string()
+        jobId: z.string(),
+        nodeId: z.optional(z.string())
     }).strict()
 });
 

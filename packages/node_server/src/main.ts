@@ -5,7 +5,7 @@ import { redis } from "./redis";
 import WebSocket from "ws";
 
 async function main() {
-  const ws = new WebSocket('ws://127.0.0.1:8080');
+  const ws = new WebSocket(`ws://127.0.0.1:8080?type=node&nodeId=${config.public_key}`);
 
   ws.on('open', () => {
     console.log('Connected to the node_gateway!');
@@ -34,7 +34,22 @@ async function main() {
           removeOnComplete: true,
           removeOnFail: true,
         });
+        break;
+      }
+      case "assigned-job": {
+        console.log("Job assigned: \n", msg.data);
+        const { nodeId, jobId } = msg.data;
 
+        if (nodeId !== config.public_key) return; // Check if this node is assigned with a job
+
+        const existing = await assignedJobsQueue.getJob(jobId);
+        if (existing) return;
+
+        await assignedJobsQueue.add("new_assigned_job", jobId, {
+            jobId: jobId,
+            removeOnComplete: true,
+            removeOnFail: true,
+        });
         break;
       }
       default: {
