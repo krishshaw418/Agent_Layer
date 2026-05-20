@@ -1,0 +1,24 @@
+{
+  "name": "gateway",
+  "main": "src/main.ts",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/main.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6",
+    "@types/ws": "^8.18.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "uuid": "^14.0.0",
+    "ws": "^8.20.1",
+    "zod": "^4.4.3"
+  }
+}

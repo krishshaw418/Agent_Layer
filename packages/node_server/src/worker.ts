@@ -2,15 +2,15 @@ import { Worker } from "bullmq";
 import { preflightCommand, buildPromptFromJob } from "@agent_layer/node";
 import type { Job, Bid } from "@agent_layer/node";
 import { submitBid } from "./utils";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { config } from "./config";
 import { redis } from "./redis";
 
 const bid_worker = new Worker(
   "new_jobs_queue",
   async (msg) => {
-    const { job_id } = msg.data; // msg.data = { job_id: string }
-    console.log(`[worker]: Processing job ${job_id}`);
+    const { jobId } = msg.data; // msg.data = { job_id: string }
+    console.log(`[worker]: Processing job ${jobId}`);
     try {
       const response = await axios.post<{
         success: boolean;
@@ -19,7 +19,7 @@ const bid_worker = new Worker(
       }>(
         `${config.node_url}/api/node/job/get-job-details`,
         {
-          jobId: job_id,
+          jobId: jobId,
         },
         {
           headers: {
@@ -59,7 +59,9 @@ const bid_worker = new Worker(
       // Submit Bid
       await submitBid(bid);
     } catch (error) {
-      console.error(error);
+      if (error instanceof AxiosError) {
+        console.error(error.message);
+      }
       throw error;
     }
   },

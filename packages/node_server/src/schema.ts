@@ -19,8 +19,11 @@ export const defaultConfigSchema = z.object({
     OLLAMA_PORT: z.coerce.number()
 })
 
-export const jobIdSchema = z.object({
-    job_id: z.string(),
+export const msgSchema = z.object({
+    event: z.string(),
+    data: z.object({
+        jobId: z.string()
+    }).strict()
 });
 
 export const jobAssignSchema = z.object({
