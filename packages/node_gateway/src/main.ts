@@ -206,6 +206,17 @@ async function main() {
                         }
                     });
 
+                    const processingNode = Node.findBySocketId(client.id);
+                    if (processingNode) {
+                        processingNode._markJobDone(jobId);
+                    }
+
+                    const serverInstance = Server.allInstances.find(s => s.getJobById(jobId));
+                    if (serverInstance) {
+                        serverInstance._deleteJob(jobId);
+                    }
+                    Response.cleanup(jobId);
+
                     break;
                 }
                 default: {
