@@ -124,7 +124,7 @@ const generate_worker = new Worker(
       // Stream chunks → Redis
       await new Promise<void>((resolve, reject) => {
         ollamaResponse.data.on("data", async (chunk: Buffer | string) => {
-          const lines = chunk.toString().split("\n").filter(Boolean);
+          const lines = chunk.toString().split("\n").filter(Boolean); // shorthand to remove all the falsy values like null, undefined, "", false etc.
           for (const line of lines) {
             try {
               const parsed = JSON.parse(line);
@@ -145,8 +145,9 @@ const generate_worker = new Worker(
       });
     } catch (error) {
       console.error("[generate-worker-error]:", error);
+      await pub.publish(`stream:${job_id}`, "__ERROR__");
       await pub.publish(`stream:${job_id}`, "__END__");
-      throw error;
+      return;
     }
   },
   {

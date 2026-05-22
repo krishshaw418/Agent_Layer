@@ -190,15 +190,22 @@ async function main() {
                     const serverInstance = Server.allInstances.find(s => s.getJobById(jobId));
                     serverInstance?._deleteJob(jobId);
 
-                    // Notify SDK that stream is complete
+                    Response.cleanup(jobId);
+                    break;
+                }
+                case "job-failed": {
+                    const jobId = msg.data.jobId;
+
+                    const requesterId = Response.JOB_REQUESTER.get(jobId);
+                    if (!requesterId) return;
+
                     wsServer.clients.forEach((c) => {
                         const identified = c as IdentifiedWebSocket;
-                        if (identified.id === requesterId && c.readyState === WebSocket.OPEN) {
-                            c.send(JSON.stringify({ event: "response-end", data: jobId }));
+                        if (identified.id === requesterId && identified.readyState === WebSocket.OPEN) {
+                            c.send(JSON.stringify({ event: "err", data: `Job: ${jobId} failed!` }));
                         }
                     });
 
-                    Response.cleanup(jobId);
                     break;
                 }
                 default: {

@@ -10,15 +10,21 @@ async function main() {
   const subscriber = redis.duplicate();
 
   subscriber.on('message', async (channel, chunk) => {
+    ws.send(JSON.stringify({ event: "response-stream", data: { jobId: channel.split(':')[1], chunk: chunk } }), (err) => {
+      if(err) console.error("Error: ", err);
+    });
+
+    if (chunk === "__ERROR__") {
+      ws.send(JSON.stringify({ event: "job-failed", data: { jobId: channel.split(':')[1] } }), (err) => {
+        if (err) console.error("Error: ", err);
+      });
+    }
+
     if (chunk === "__END__") {
       ws.send(JSON.stringify({ event: "response-stream-end", data: { jobId: channel.split(':')[1] } }), (err) => {
         if(err) console.error("Error: ", err);
       });
-      return;
     }
-    ws.send(JSON.stringify({ event: "response-stream", data: { jobId: channel.split(':')[1], chunk: chunk } }), (err) => {
-      if(err) console.error("Error: ", err);
-    });
   });
     
   subscriber.on("connect", () => console.log("[Redis Subscriber] connected"));

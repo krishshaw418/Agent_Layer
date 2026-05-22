@@ -1,8 +1,8 @@
 {
-  "job_id": "6a0f2784417ed5c8c4399f67",
-  "placed_at": 1779378063,
+  "job_id": "6a1036c4c6f594f0d3980835",
+  "placed_at": 1779447501,
   "token": 137,
-  "time_requires": 3299,
+  "time_requires": 2626,
   "confidence": 0.68,
   "model": "qwen2:0.5b"
 }
