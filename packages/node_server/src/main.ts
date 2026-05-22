@@ -1,61 +1,97 @@
 import { config } from "./config";
-import { jobAssignSchema, jobIdSchema } from "./schema";
+import { msgSchema } from "./schema";
 import { newJobsQueue, assignedJobsQueue } from "./queue";
 import { redis } from "./redis";
-import { createServer } from "./server";
+import { ws } from "./socket";
 
 async function main() {
-  const app = createServer();
 
-  app.listen(config.port, () => {
-    console.log(`Listening on port: ${config.port}`);
-  });
-
+  // Create a duplicate instance of redis connection
   const subscriber = redis.duplicate();
+
+  subscriber.on('message', async (channel, chunk) => {
+    ws.send(JSON.stringify({ event: "response-stream", data: { jobId: channel.split(':')[1], chunk: chunk } }), (err) => {
+      if(err) console.error("Error: ", err);
+    });
+
+    if (chunk === "__ERROR__") {
+      ws.send(JSON.stringify({ event: "job-failed", data: { jobId: channel.split(':')[1] } }), (err) => {
+        if (err) console.error("Error: ", err);
+      });
+    }
+
+    if (chunk === "__END__") {
+      ws.send(JSON.stringify({ event: "response-stream-end", data: { jobId: channel.split(':')[1] } }), (err) => {
+        if(err) console.error("Error: ", err);
+      });
+    }
+  });
+    
   subscriber.on("connect", () => console.log("[Redis Subscriber] connected"));
-  subscriber.on("ready", () => console.log("[Redis Subscriber] ready"));
   subscriber.on("error", (err) =>
     console.error("[Redis Subscriber error]", err),
   );
 
-    // Subscribe to new jobs
-    await subscriber.subscribe(config.new_jobs_channel, config.job_assign_channel);
+  ws.on('open', () => {
+    console.log('Connected to the node_gateway!');
+  });
 
-    subscriber.on("message", async (channel, msg) => {
-        if (channel === config.new_jobs_channel) {
-        const parsed = JSON.parse(msg);
-        console.log(`Received message at ${channel}: ${JSON.stringify(parsed)}`)
+  ws.on('message', async (data, _isBinary) => {
+    console.log("RAW MESSAGE: ", data.toString());
+    const parsed = msgSchema.safeParse(JSON.parse(data.toString()));
 
-        const existing = await newJobsQueue.getJob(parsed.job_id);
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return;
+    }
+
+    const msg = parsed.data;
+
+    switch (msg.event) {
+      case "jobs": {
+        console.log("Job received: \n", msg.data);
+        const jobId = msg.data.jobId;
+        const existing = await newJobsQueue.getJob(jobId);
         if (existing) return;
 
-        await newJobsQueue.add("new_job", parsed, {
-            jobId: parsed.job_id,
+        await newJobsQueue.add("new_job", msg.data, {
+          jobId,
+          removeOnComplete: true,
+          removeOnFail: true,
+        });
+        break;
+      }
+      case "assigned-job": {
+        console.log("Job assigned: \n", msg.data);
+        const { jobId, nodeId } = msg.data;
+
+        if (nodeId !== config.public_key) return; // Check if this node is assigned with a job
+
+        const existing = await assignedJobsQueue.getJob(jobId);
+        if (existing) return;
+
+        // Subscribe to the stream-channel
+        await subscriber.subscribe(`stream:${jobId}`);
+
+        await assignedJobsQueue.add("new_assigned_job", jobId, {
+            jobId: jobId,
             removeOnComplete: true,
             removeOnFail: true,
         });
-        }
 
-        if (channel === config.job_assign_channel) {
-        const parsed = JSON.parse(msg);
-        console.log(`Received message at ${channel}: ${JSON.stringify(parsed)}`);
+        break;
+      }
+      default: {
+        console.log("No such event found!");
+        break;
+      }
+    }
+  });
 
-        if (parsed.nodeId !== config.public_key) return;
-
-        const existing = await assignedJobsQueue.getJob(parsed.jobId);
-          console.log(existing);
-        if (existing) return;
-
-        await assignedJobsQueue.add("new_assigned_job", parsed.jobId, {
-            jobId: parsed.jobId,
-            removeOnComplete: true,
-            removeOnFail: true,
-        });
-        }
-    });
-
-    // Subscribe second channel
-    // await subscriber.subscribe(config.job_assign_channel);
+  ws.on('error', (err) => {
+    console.error('WebSocket error:', err);
+    ws.terminate();
+  });
 };
 
 main().catch((err) => {

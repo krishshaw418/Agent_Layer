@@ -2,15 +2,15 @@ import { Worker } from "bullmq";
 import { preflightCommand, buildPromptFromJob } from "@agent_layer/node";
 import type { Job, Bid } from "@agent_layer/node";
 import { submitBid } from "./utils";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { config } from "./config";
 import { redis } from "./redis";
 
 const bid_worker = new Worker(
   "new_jobs_queue",
   async (msg) => {
-    const { job_id } = msg.data; // msg.data = { job_id: string }
-    console.log(`[worker]: Processing job ${job_id}`);
+    const { jobId } = msg.data; // msg.data = { job_id: string }
+    console.log(`[worker]: Processing job ${jobId}`);
     try {
       const response = await axios.post<{
         success: boolean;
@@ -19,7 +19,7 @@ const bid_worker = new Worker(
       }>(
         `${config.node_url}/api/node/job/get-job-details`,
         {
-          jobId: job_id,
+          jobId: jobId,
         },
         {
           headers: {
@@ -59,7 +59,9 @@ const bid_worker = new Worker(
       // Submit Bid
       await submitBid(bid);
     } catch (error) {
-      console.error(error);
+      if (error instanceof AxiosError) {
+        console.error(error.message);
+      }
       throw error;
     }
   },
@@ -122,7 +124,7 @@ const generate_worker = new Worker(
       // Stream chunks → Redis
       await new Promise<void>((resolve, reject) => {
         ollamaResponse.data.on("data", async (chunk: Buffer | string) => {
-          const lines = chunk.toString().split("\n").filter(Boolean);
+          const lines = chunk.toString().split("\n").filter(Boolean); // shorthand to remove all the falsy values like null, undefined, "", false etc.
           for (const line of lines) {
             try {
               const parsed = JSON.parse(line);
@@ -143,8 +145,9 @@ const generate_worker = new Worker(
       });
     } catch (error) {
       console.error("[generate-worker-error]:", error);
+      await pub.publish(`stream:${job_id}`, "__ERROR__");
       await pub.publish(`stream:${job_id}`, "__END__");
-      throw error;
+      return;
     }
   },
   {
