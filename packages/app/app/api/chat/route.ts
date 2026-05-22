@@ -5,6 +5,7 @@ import { createJobOnChain } from "@/utils/backendOnChainHandlers";
 import { scheduleFinalizeJob } from "@/utils/keeperHub";
 import { hashApiKey } from "@/utils/generateAPIKey";
 import { getRedisClient } from "@/lib/redis";
+import { sendMessageToGateway } from "@/utils/ws";
 
 const redisClient = await getRedisClient();
 
@@ -95,12 +96,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to schedule job finalization on KeeperHub" }, { status: 500 });
     }
 
-    // publish jobId to redis channel "new-jobs-channel"
-    const channel = "new-jobs-channel";
-
-    await redisClient.publish(channel, JSON.stringify({ job_id: jobId }));
-
-    console.log(`Published new job to Redis channel: ${channel}`);
+    sendMessageToGateway({
+      event: "new-job",
+      data: {
+        jobId: jobId
+      }
+    });
 
     return NextResponse.json(savedJob, { status: 201 });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRedisClient } from "@/lib/redis";
 import dotenv from "dotenv";
+import { sendMessageToGateway } from "@/utils/ws";
 dotenv.config();
 
 const redisClient = await getRedisClient();
@@ -27,12 +28,13 @@ export async function POST(request: Request) {
 
     console.log(`Received job assignment notification for jobId: ${jobId}, nodeId: ${nodeId}`);
 
-    // publish the jobId and nodeId to Redis channel
-    const channel = "job-assignment-channel";
-
-    await redisClient.publish(channel, JSON.stringify({ jobId, nodeId }));
-
-    console.log(`Published job assignment to Redis channel: ${channel}`);
+    sendMessageToGateway({
+      event: "assign-job",
+      data: {
+        nodeId: nodeId,
+        jobId: jobId
+      }
+    });
 
     return NextResponse.json({ message: "Job assignment published successfully" }, { status: 200 });
   } catch (error) {
