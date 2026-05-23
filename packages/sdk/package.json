@@ -1,6 +1,6 @@
 {
   "name": "@agent_layer/sdk",
-  "version": "1.0.16",
+  "version": "1.0.18",
   "description": "The SDK for AgentLayer",
   "license": "ISC",
   "author": "AgentLayer",

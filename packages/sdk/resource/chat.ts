@@ -67,7 +67,8 @@ export class ChatResource {
   }
 
   private async *streamResponse(jobId: string) {
-    const wsUrl = `wss://3912-45-113-103-56.ngrok-free.app?type=user`;
+    // const wsUrl = `wss://a23e-45-113-103-56.ngrok-free.app?type=user`;
+    const wsUrl = `wss://api.node-gateway.amethsyt.xyz?type=user`;
     const timeoutMs = 180_000;
 
     const queue: any[] = [];
