@@ -7,7 +7,7 @@ class WsInstance {
 
   public static getInstance(): WebSocket {
     if (!this.instance || this.instance.readyState === WebSocket.CLOSED) {
-      this.instance = new WebSocket(`ws://127.0.0.1:8080?type=node&nodeId=${config.public_key}`);
+      this.instance = new WebSocket(`${config.node_gateway_url}?type=node&nodeId=${config.public_key}`);
     }
     return this.instance;
   }

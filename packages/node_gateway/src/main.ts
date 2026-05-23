@@ -7,6 +7,7 @@ import { msgSchema } from "./schema";
 
 interface IdentifiedWebSocket extends WebSocket {
     id: string;
+    isAlive: boolean;
 }
 
 async function main() {
@@ -18,6 +19,17 @@ async function main() {
 
     wsServer.on('connection', (ws, req) => {
 
+        let client = ws as IdentifiedWebSocket;
+        let server: Server;
+        let node: Node;
+        let user: User;
+
+        client.isAlive = true;
+        client.on("pong", () => {
+            client.isAlive = true;
+            console.log("PONG:", client.id);
+        });
+
         const fullUrl = 'http://' + req.headers.host + req.url;
         const { searchParams } = new URL(fullUrl);
         const type = searchParams.get('type');
@@ -25,11 +37,6 @@ async function main() {
         if (!type) {
             return ws.send(JSON.stringify({ event: "err", data: "Missing type query params!" }));
         }
-
-        let client = ws as IdentifiedWebSocket;
-        let server: Server;
-        let node: Node;
-        let user: User;
 
         if (type === "server") {
             client.id = uuidv4();
@@ -225,6 +232,22 @@ async function main() {
                 }
             }
         })
+    });
+
+    const interval = setInterval(() => {
+        wsServer.clients.forEach((c) => {
+            if (!(c as IdentifiedWebSocket).isAlive) {
+            console.log("Terminating dead socket");
+            return (c as IdentifiedWebSocket).terminate();
+            }
+
+            (c as IdentifiedWebSocket).isAlive = false;
+            (c as IdentifiedWebSocket).ping();
+        });
+    }, 30000);
+
+    wsServer.on("close", () => {
+        clearInterval(interval);
     });
 
     wsServer.on('listening', () => {

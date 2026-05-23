@@ -88,6 +88,10 @@ async function main() {
     }
   });
 
+  ws.on("close", () => {
+    console.log("Disconnected from node_gateway!");
+  })
+
   ws.on('error', (err) => {
     console.error('WebSocket error:', err);
     ws.terminate();
