@@ -9,7 +9,7 @@ export const config = {
 
     // Default configs
     port: parsedDefault.PORT,
-    redis_url: parsedDefault.UPSTASH_REDIS_URL,
+    node_gateway_url: parsedDefault.NODE_GATEWAY_URL,
     contract_add: parsedDefault.CONTRACT_ADDRESS,
     new_jobs_channel: parsedDefault.NEW_JOBS_CHANNEL,
     job_assign_channel: parsedDefault.JOB_ASSIGN_CHANNEL,

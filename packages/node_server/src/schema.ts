@@ -11,7 +11,7 @@ export const manualConfigSchema = z.object({
 
 export const defaultConfigSchema = z.object({
     PORT: z.coerce.number().default(3000),
-    UPSTASH_REDIS_URL: z.string(),
+    NODE_GATEWAY_URL: z.string(),
     CONTRACT_ADDRESS: z.string(),
     NEW_JOBS_CHANNEL: z.string(),
     JOB_ASSIGN_CHANNEL: z.string(),
