@@ -49,11 +49,11 @@ echo "📄 Writing default.config.json..."
 cat > "$DEFAULT_CONFIG" <<'EOF'
 {
   "PORT": 8080,
+  "NODE_GATEWAY_URL": "wss://api.node-gateway.amethsyt.xyz",
   "NEW_JOBS_CHANNEL": "new-jobs-channel",
   "JOB_ASSIGN_CHANNEL": "job-assignment-channel",
   "CONTRACT_ADDRESS": "0x86f4089F7726dc0b4Cfe9B2540A81b12355e6FFa",
   "OLLAMA_HOST": "127.0.0.1",
-  "UPSTASH_REDIS_URL": "rediss://default:gQAAAAAAAbGzAAIgcDEyYTE2NzNkYTY1Yjc0NTEyOTg3NDM1YmNjZjZiOTY0MA@touching-lamprey-111027.upstash.io:6379",
   "OLLAMA_PORT": 11434
 }
 EOF
