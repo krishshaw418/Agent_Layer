@@ -12,3 +12,5 @@ export const msgSchema = z.object({
         chunk: z.optional(z.string())
     }).strict()
 })
+
+export const typeSchema = z.enum(["user", "node", "server"]);
