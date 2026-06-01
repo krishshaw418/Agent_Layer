@@ -1,7 +1,8 @@
 import z from "zod";
 
 export const envSchema = z.object({
-    PORT: z.coerce.number()
+    PORT: z.coerce.number(),
+    MONGODB_URI: z.string()
 });
 
 export const msgSchema = z.object({
@@ -14,3 +15,5 @@ export const msgSchema = z.object({
 })
 
 export const typeSchema = z.enum(["user", "node", "server"]);
+
+export const apiKeySchema = z.string();
