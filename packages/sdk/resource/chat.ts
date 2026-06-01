@@ -1,4 +1,5 @@
 import axios from "axios";
+import WebSocket from "ws";
 import { AgentLayerClient } from "../core/client";
 
 export type Role = "system" | "user" | "assistant";
@@ -78,7 +79,11 @@ export class ChatResource {
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
     let completedSuccessfully = false;
 
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(wsUrl, {
+      headers: {
+        Authorization: `Bearer ${this.client.apiKey}`,
+      },
+    });
 
     timeoutHandle = setTimeout(() => {
       terminalError = new Error(`Chat request timed out after ${timeoutMs / 1000} seconds`);
@@ -87,7 +92,7 @@ export class ChatResource {
       if (resolve) { resolve(); resolve = null; }
     }, timeoutMs);
 
-    ws.onmessage = (event) => {
+    ws.onmessage = (event: any) => {
       let parsed: { event: string; data: string };
 
       try {
