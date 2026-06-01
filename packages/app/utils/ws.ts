@@ -15,3 +15,15 @@ ws.on("open", () => {
 ws.on("error", (error: any) => {
   console.error("WebSocket error:", error);
 });
+
+export const sendMessageToGateway = (message: any) => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(message));
+    console.log("Sent message to gateway server:", message);
+  } else {
+    console.error(
+      "WebSocket connection is not open. Failed to send message:",
+      message,
+    );
+  }
+};
