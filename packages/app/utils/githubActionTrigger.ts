@@ -29,7 +29,6 @@ export async function finalizeOnMaxBid(jobId: string): Promise<boolean> {
     }
 }
 
-
 export async function markJobAsCompleted(jobId: string): Promise<boolean> {
     const response = await fetch("https://api.github.com/repos/krishshaw418/Agent_Layer/dispatches", {
         method: "POST",
@@ -92,5 +91,30 @@ export async function scheduleFinalizeJob(jobId: string, runAt: number): Promise
     } catch (error) {
         console.error("Error scheduling job:", error);
         return false;
+    }
+}
+
+export async function checkJobFailed(jobId: string): Promise<boolean> {
+    const response = await fetch("https://api.github.com/repos/krishshaw418/Agent_Layer/dispatches", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN!}`,
+            Accept: "application/vnd.github+json",
+        },
+        body: JSON.stringify({
+            event_type: "check-job-failed",
+            client_payload: {
+                jobId: jobId,
+            },
+        })
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        console.log("Check job failed error:", response.status, text);
+        return false;
+    } else {
+        console.log("Successfully triggered for checking job failed:", jobId);
+        return true;
     }
 }

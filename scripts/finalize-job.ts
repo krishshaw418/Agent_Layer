@@ -71,19 +71,16 @@ async function callFinalizeJobOnchain(jobId: string) {
     }
 }
 
-async function callNextWorkflow() {
+async function callCheckJobFailedWebhook() {
     try {
-        const response = await fetch(process.env.NEXT_WORKFLOW_URL!, {
+        const response = await fetch(process.env.CHECK_JOB_FAILED_URL!, {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${process.env.GITHUB_TOKEN!}`,
-                Accept: "application/vnd.github+json",
+                "X-Webhook-Secret": process.env.AGENT_LAYER_WEBHOOK_SECRET!,
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                event_type: "check-job-failed",
-                client_payload: {
-                    jobId,
-                },
+                jobId,
             }),
         });
         return response;
@@ -101,7 +98,7 @@ async function main() {
     console.log("isJobExpired: ", isExpired);
     if (isExpired) {
         await callFinalizeJobOnchain(jobId);
-        await callNextWorkflow();
+        await callCheckJobFailedWebhook();
         console.log("Called next workflow - avoided on local environment");
     }
 }

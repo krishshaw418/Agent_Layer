@@ -30,4 +30,5 @@ jobs:
           RPC_URL: ${{ secrets.RPC_URL }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
-          NEXT_WORKFLOW_URL: ${{ secrets.NEXT_WORKFLOW_URL }}
+          AGENT_LAYER_WEBHOOK_SECRET: ${{ secrets.AGENT_LAYER_WEBHOOK_SECRET }}
+          CHECK_JOB_FAILED_URL: ${{ secrets.CHECK_JOB_FAILED_URL }}
