@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import db from '@/lib/db';
-import { finalizeOnMaxBid } from "@/utils/keeperHub";
+import { finalizeOnMaxBid } from "@/utils/githubActionTrigger";
 import { hashApiKey } from "@/utils/generateAPIKey";
-
 
 export async function POST(request: Request) {
     try {
@@ -11,16 +10,16 @@ export async function POST(request: Request) {
         if (!apiKey) {
             return NextResponse.json({ error: "Missing API key" }, { status: 401 });
         }
-    
+
         // generate hash of api key
         const apiKeyHash = hashApiKey(apiKey);
-    
+
         // validate api key
         const validKey = await db.aPIKey.findUnique({ where: { keyHash: apiKeyHash } });
         if (!validKey) {
             return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
         }
-    
+
         // check if api key is revoked
         if (validKey.revoked) {
             return NextResponse.json({ error: "API key revoked" }, { status: 401 });
@@ -28,7 +27,7 @@ export async function POST(request: Request) {
 
         // Bid limit check trigger logic
         const { jobId } = await request.json();
-        
+
         if (!jobId) {
             return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
         }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import db from '@/lib/db';
-import { markJobAsCompleted } from "@/utils/keeperHub";
+import { markJobAsCompleted } from "@/utils/githubActionTrigger";
 import { hashApiKey } from "@/utils/generateAPIKey";
 
 export async function POST(request: Request) {
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
-    
+
     // check if the job belongs to the user
     if (job.createdBy !== userPublicKey) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

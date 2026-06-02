@@ -1,0 +1,33 @@
+name: Finalize Job
+
+on:
+  repository_dispatch:
+    types: [finalize-job]
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Debug Payload
+        run: |
+          echo "JOB_ID=${{ github.event.client_payload.jobId }}"
+
+      - name: Execute workflow
+        run: bun run scripts/finalize-job.ts
+        env:
+          JOB_ID: ${{ github.event.client_payload.jobId }}
+
+          RPC_URL: ${{ secrets.RPC_URL }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+
+          NEXT_WORKFLOW_URL: ${{ secrets.NEXT_WORKFLOW_URL }}

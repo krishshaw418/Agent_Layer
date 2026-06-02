@@ -1,0 +1,34 @@
+name: Finalize Job on Max Bid
+
+on:
+  repository_dispatch:
+    types: [finalize-job-on-max-bid]
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Debug Payload
+        run: |
+          echo "JOB_ID=${{ github.event.client_payload.jobId }}"
+
+      - name: Execute workflow
+        run: bun run scripts/finalize-job-on-max-bid.ts
+        env:
+          JOB_ID: ${{ github.event.client_payload.jobId }}
+
+          RPC_URL: ${{ secrets.RPC_URL }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+
+          NOTIFY_JOB_FAILURE_URL: ${{ secrets.NOTIFY_JOB_FAILURE_URL }}
+          AGENT_LAYER_WEBHOOK_SECRET: ${{ secrets.AGENT_LAYER_WEBHOOK_SECRET }}

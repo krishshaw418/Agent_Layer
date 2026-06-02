@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ["ox"],
+  serverExternalPackages: ["ws"],
   experimental: {
     externalDir: true
   },

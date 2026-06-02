@@ -3,5 +3,17 @@
     "private": "true",
     "workspaces": [
         "packages/**"
-    ]
+    ],
+    "scripts": {
+        "dev": "bun --filter agent-layer-docs dev",
+        "build": "bun --filter agent-layer-docs build",
+        "start": "bun --filter agent-layer-docs start"
+    },
+    "dependencies": {
+        "ethers": "^6.16.0",
+        "ws": "^8.21.0"
+    },
+    "devDependencies": {
+        "dotenv-cli": "^11.0.0"
+    }
 }

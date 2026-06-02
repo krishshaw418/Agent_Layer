@@ -2,12 +2,9 @@ import { NextResponse } from "next/server";
 import db from '@/lib/db';
 import { createJobFromRequest } from '@/utils/jobBuilder';
 import { createJobOnChain } from "@/utils/backendOnChainHandlers";
-import { scheduleFinalizeJob } from "@/utils/keeperHub";
+import { scheduleFinalizeJob } from "@/utils/githubActionTrigger";
 import { hashApiKey } from "@/utils/generateAPIKey";
-import { getRedisClient } from "@/lib/redis";
 import { sendMessageToGateway } from "@/utils/ws";
-
-const redisClient = await getRedisClient();
 
 export async function POST(request: Request) {
   try {
@@ -73,7 +70,7 @@ export async function POST(request: Request) {
 
     if (!createJobResponse.success) {
       console.error("Failed to create job on chain:", createJobResponse.error);
-      
+
       await db.job.update({
         where: { id: jobId },
         data: { status: "failed" },
@@ -87,7 +84,7 @@ export async function POST(request: Request) {
 
     if (!scheduleResponse) {
       console.error("Failed to schedule job finalization on KeeperHub for jobId:", jobId);
-      
+
       await db.job.update({
         where: { id: jobId },
         data: { status: "failed" },
