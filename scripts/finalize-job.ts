@@ -101,7 +101,7 @@ async function main() {
     console.log("isJobExpired: ", isExpired);
     if (isExpired) {
         await callFinalizeJobOnchain(jobId);
-        // await callNextWorkflow();
+        await callNextWorkflow();
         console.log("Called next workflow - avoided on local environment");
     }
 }
